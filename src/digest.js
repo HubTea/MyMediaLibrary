@@ -8,7 +8,24 @@
 const crypto = require('crypto');
 
 
-class DigestPairFromDatabase{
+class DigestPair{
+    async isEqual(password, digestGenerator){
+        const digestPair = await this.getDigestPair();
+        const generatedDigest = await digestGenerator.generateDigest(
+            password, digestPair.salt, digestPair.digest.length
+        );
+        
+        for(let i = 0; i < digestPair.digest.length; i++){
+            if(digestPair.digest[i] !== generatedDigest[i]){
+                return false;
+            }
+        }
+        return true;
+    }
+}
+
+
+class DigestPairFromDatabase extends DigestPair{
     constructor(model, accountId){
         this.model = model;
         this.accountId = accountId;
@@ -35,24 +52,34 @@ class DigestPairFromDatabase{
     async setDigestPair(digest, salt){
         return null;
     }
+}
 
-    async isEqual(password, digestGenerator){
-        const digestPair = await this.getDigestPair();
-        const generatedDigest = await digestGenerator.generateDigest(
-            password, digestPair.salt, digestPair.digest.length
-        );
-        
-        for(let i = 0; i < digestPair.digest.length; i++){
-            if(digestPair.digest[i] !== generatedDigest[i]){
-                return false;
-            }
-        }
-        return true;
+
+class ConstantDigestPair extends DigestPair{
+    constructor(digest, salt){
+        this.setDigestPair(digest, salt);
+    }
+
+    async getDigestPair(){
+        return {
+            digest: this.digest,
+            salt: this.salt
+        };
+    }
+
+    async setDigestPair(digest, salt){
+        this.digest = digest;
+        this.salt = salt;
     }
 }
 
 
-class Pbkdf2DigestGenerator{
+class DigestGenerator{
+    generateDigest(password, salt, digestLength){}
+}
+
+
+class Pbkdf2DigestGenerator extends DigestGenerator{
     constructor(iteration, hash){
         this.iteration = iteration;
         this.hash = hash;
@@ -75,4 +102,5 @@ class Pbkdf2DigestGenerator{
 }
 
 exports.DigestPairFromDatabase = DigestPairFromDatabase;
+exports.ConstantDigestPair = ConstantDigestPair;
 exports.Pbkdf2DigestGenerator = Pbkdf2DigestGenerator;
