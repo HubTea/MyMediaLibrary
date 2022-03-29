@@ -35,7 +35,7 @@ class Authorizer{
      * 
      * @returns {string} Autorizer.token을 JSON으로 변환하여 반환.
      */
-    Export(){
+    export(){
         return JSON.stringify(this.token);
     }
 
@@ -44,7 +44,7 @@ class Authorizer{
      * @param {string} userId 유저의 uuid.
      * @returns {boolean} userId에 해당하는 유저의 데이터에 접근 가능하면 true.
      */
-    TestUserAccessibility(userId){
+    testUserAccessibility(userId){
         return (this.token.user.userId === userId);
     }
     
@@ -53,7 +53,7 @@ class Authorizer{
      * @param {string} mediaId 
      * @returns mediaId에 해당하는 미디어에 접근 가능하면 true.
      */
-    TestMediaAccessibility(mediaId){
+    testMediaAccessibility(mediaId){
         return true;
     }
 
@@ -61,7 +61,10 @@ class Authorizer{
      * Authorizer.token의 userId를 설정함.
      * @param {string} userId 유저의 uuid.
      */
-    SetAccessibleUser(userId){
+    setAccessibleUser(userId){
         this.token.user.userId = userId;
     }
 }
+
+
+exports.Authorizer = Authorizer;
