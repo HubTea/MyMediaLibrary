@@ -1,11 +1,11 @@
-const express = require('../express');
-const serverConfig = require('./serverConfig');
-const orm = require('../sequelize');
-const getModel = require('./model');
-const auth = require('./authorizer');
+const express = require('express');
+const orm = require('sequelize');
 const crypto = require('crypto');
+
+const serverConfig = require('./serverConfig');
+const getModel = require('./model');
 const authentication = require('./digest');
-const signer = require('./signer');
+const handler = require('./requestHandler');
 
 
 const app = express();
@@ -25,40 +25,26 @@ app.use('/' + serverConfig.apiVersion, router);
 
 router.get('/auth', async function(req, res){
     try{
-        const digest = new authentication.DigestPairFromDatabase(model.User, req.body.accountId);
-        const digestGenerator = new authentication.Pbkdf2DigestGenerator(
-            serverConfig.pbkdf2.iteration, serverConfig.pbkdf2.hash
-        );
-        const jwtSigner = new signer.Signer('sha512', serverConfig.key.private, serverConfig.key.public);
-        
-        //인증
-        if(await digest.isEqual(req.body.accountPassword, digestGenerator) === false){
-            //예외 던짐
-            return;
-        }
-
-        //권한 부여
-        const authorizer = new Authorizer({});
-        const userRow = await model.User.findOne({
-            attributes: ['userId'],
+        const user = await model.User.findOne({
+            attributes: ['userId', 'accountPasswordHash', 'accountPasswordSalt'],
             where: {
                 accountId: req.body.accountId
             }
         });
 
-        authorizer.setAccessibleUser(userRow.userId);
+        if(user === null){
+            //예외 던짐
+        }
 
-        //토큰 발행
-        const tokenBody = JSON.stringify({
-            authToken: authorizer.export()
-        });
-
-        const signature = await jwtSigner.sign(tokenBody);
-
-        res.write(JSON.stringify({
-            token: tokenBody + '.' + signature.toString('base64')
-        }));
-        res.end();
+        const digest = new authentication.ConstantDigestPair(
+            Buffer.from(user.accountPasswordHash, 'base64'), 
+            user.accountPasswordSalt
+        );
+        const digestGenerator = new authentication.Pbkdf2DigestGenerator(
+            serverConfig.pbkdf2.iteration, serverConfig.pbkdf2.hash
+        );
+        
+        handler.responseAuth(req, res, digest, digestGenerator, user);
     }
     catch(err){
         //에러 메시지 전송
