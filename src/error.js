@@ -1,8 +1,8 @@
 
 
 class ErrorResponse{
-    constructor(httpErrorCode, errorCode, underlyingError){
-        this.httpErrorCode = httpErrorCode;
+    constructor(httpStatusCode, errorCode, underlyingError){
+        this.httpStatusCode = httpStatusCode;
         this.errorCode = errorCode;
         this.underlyingError = underlyingError;
     }
