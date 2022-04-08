@@ -44,7 +44,7 @@ class IllegalAccountIdError extends ErrorResponse{
 }
 
 
-moduel.export = {
+module.exports = {
     ErrorResponse,
     InvalidJwtError,
     PasswordNotMatchError,
