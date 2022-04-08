@@ -9,6 +9,13 @@ class ErrorResponse{
 }
 
 
+class JwtSignFailedError extends ErrorResponse{
+    constructor(underlyingError){
+        super(400, 'TOKEN_SIGIN_FAILED', underlyingError);
+    }
+}
+
+
 class InvalidJwtError extends ErrorResponse{
     constructor(underlyingError){
         super(400, 'INVALID_TOKEN', underlyingError);
@@ -46,6 +53,7 @@ class IllegalAccountIdError extends ErrorResponse{
 
 module.exports = {
     ErrorResponse,
+    JwtSignFailedError,
     InvalidJwtError,
     PasswordNotMatchError,
     UserNotExistError,
