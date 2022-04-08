@@ -1,6 +1,7 @@
 const auth = require('./authorizer');
 const jwt = require('jsonwebtoken');
 const serverConfig = require('./serverConfig');
+const error = require('./error');
 
 
 async function sendAuthorizer(res, authorizer){
@@ -18,20 +19,20 @@ async function sendAuthorizer(res, authorizer){
 
             function(err, token){
                 if(err){
-                    //에러 객체 생성
-                    reject(/** */ );
+                    reject(new error.JwtSignFailedError(err));
+                    return;
                 }
 
                 res.write(JSON.stringify({
                     token
                 }));
                 res.end();
-
                 resolve();
             }
         );
     });
 }
+
 
 async function getAuthorizer(req){
     const authHeader = req.get('Authorization');
@@ -39,19 +40,22 @@ async function getAuthorizer(req){
     return new Promise(function(resolve, reject){
         jwt.verify(authHeader, serverConfig.key.public, function(err, payload){
             if(err){
-                //예외 객체 설정 후 reject
+                reject(new error.InvalidJwtError(err));
+                return;
             }
             else{
                 resolve(payload);
+                return;
             }
         });
     });
 }
 
+
 async function responseAuth(req, res, digest, digestGenerator, userPromise){
     //인증
     if(await digest.isEqual(req.body.accountPassword, digestGenerator) === false){
-        //예외 던짐
+        throw new error.PasswordNotMatchError(null);
     }
 
     //권한 부여
@@ -63,5 +67,8 @@ async function responseAuth(req, res, digest, digestGenerator, userPromise){
     await sendAuthorizer(res, authorizer);
 }
 
-exports.responseAuth = responseAuth;
-exports.getAuthorizer = getAuthorizer;
+
+module.exports = {
+    responseAuth,
+    getAuthorizer
+};
