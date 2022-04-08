@@ -51,6 +51,13 @@ class IllegalAccountIdError extends ErrorResponse{
 }
 
 
+class InternalError extends ErrorResponse{
+    constructor(underlyingError){
+        super(500, 'INTERNAL_ERROR', underlyingError);
+    }
+}
+
+
 module.exports = {
     ErrorResponse,
     JwtSignFailedError,
@@ -58,5 +65,6 @@ module.exports = {
     PasswordNotMatchError,
     UserNotExistError,
     IllegalAccountIdError,
-    IllegalAccountPasswordError
+    IllegalAccountPasswordError,
+    InternalError
 };
