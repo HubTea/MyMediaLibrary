@@ -3,29 +3,34 @@ const jwt = require('jsonwebtoken');
 const serverConfig = require('./serverConfig');
 
 
-function sendAuthorizer(res, authorizer){
-    jwt.sign(
-        {
-            authorizer: authorizer.export()
-        }, 
+async function sendAuthorizer(res, authorizer){
+    return new Promise(function(resolve, reject){
+        jwt.sign(
+            {
+                authorizer: authorizer.export()
+            }, 
 
-        serverConfig.key.private, 
+            serverConfig.key.private, 
 
-        {
-            expiresIn: '7d'
-        },
+            {
+                expiresIn: '7d'
+            },
 
-        function(err, token){
-            if(err){
-                //예외 던짐
+            function(err, token){
+                if(err){
+                    //에러 객체 생성
+                    reject(/** */ );
+                }
+
+                res.write(JSON.stringify({
+                    token
+                }));
+                res.end();
+
+                resolve();
             }
-
-            res.write(JSON.stringify({
-                token
-            }));
-            res.end();
-        }
-    );
+        );
+    });
 }
 
 async function getAuthorizer(req){
@@ -55,7 +60,7 @@ async function responseAuth(req, res, digest, digestGenerator, userPromise){
 
     authorizer.setAccessibleUser(user.userId);
 
-    sendAuthorizer(res, authorizer);
+    await sendAuthorizer(res, authorizer);
 }
 
 exports.responseAuth = responseAuth;
