@@ -3,12 +3,31 @@
 const process = require('process');
 const crypto = require('crypto');
 const fs = require('fs');
+const orm = require('sequelize');
+
+const getModels = require('./model');
+
 
 const privateKey = crypto.createPrivateKey(
     fs.readFileSync(process.env.PrivateKeyPath)
 );
 
 const publicKey = crypto.createPublicKey(privateKey);
+
+const sqlServer = {
+    dbms: 'postgres',
+    user: 'postgres',
+    password: process.env.PostgreSQLPassword,
+    host: 'localhost',
+    port: '5432',
+    database: 'MyMediaLibrary',
+
+    get url(){
+        return `${this.dbms}://${this.user}:${this.password}@${this.host}:${this.port}/${this.database}`;
+    }
+};
+
+const sequelize = new orm.Sequelize(sqlServer.url);
 
 module.exports = {
     port: 443,
@@ -25,16 +44,7 @@ module.exports = {
         digestLenght: 32
     },
 
-    sqlServer: {
-        dbms: 'postgres',
-        user: 'postgres',
-        password: process.env.PostgreSQLPassword,
-        host: 'localhost',
-        port: '5432',
-        database: 'MyMediaLibrary',
-
-        get url(){
-            return `${this.dbms}://${this.user}:${this.password}@${this.host}:${this.port}/${this.database}`;
-        }
-    }
+    sqlServer,
+    sequelize,
+    model: getModels(sequelize)
 };
