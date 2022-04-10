@@ -13,6 +13,10 @@ app.listen(serverConfig.port, function(){
     console.log('listening');
 });
 
+app.use(function(req, res, next){
+    console.log('request: ' + req.method + ' ' + req.originalUrl);
+    next();
+});
 app.use(express.json());
 app.use('/' + serverConfig.apiVersion, router);
 

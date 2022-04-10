@@ -81,12 +81,13 @@ class DigestGenerator{
 
 class Pbkdf2DigestGenerator extends DigestGenerator{
     constructor(iteration, hash){
+        super();
         this.iteration = iteration;
         this.hash = hash;
     }
     
     async generateDigest(password, salt, digestLength){
-        return Promise(function(resolve, reject){
+        function asyncPbkdf2(resolve, reject){
             crypto.pbkdf2(password, salt, this.iteration, digestLength, this.hash, 
                 function(err, digest){
                     if(err){
@@ -97,7 +98,9 @@ class Pbkdf2DigestGenerator extends DigestGenerator{
                     }
                 }
             );
-        });
+        }
+
+        return new Promise(asyncPbkdf2.bind(this));
     }
 }
 

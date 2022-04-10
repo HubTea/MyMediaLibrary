@@ -10,7 +10,7 @@ const authentication = require('./digest');
 const router = express.Router();
 
 
-router.post('/users', async function(req, res){
+router.post('/', async function(req, res){
     try{
         let accountID = req.body.accountID;
         let accountPw = req.body.accountPassword;
@@ -24,13 +24,13 @@ router.post('/users', async function(req, res){
 
         let randomBytes = crypto.randomBytes(18);
         let salt = randomBytes.toString('base64');
-        let digest = digestGenerator.generateDigest(accountPw, salt);
+        let digest = await digestGenerator.generateDigest(accountPw, salt, 32);
         let digestString = digest.toString('base64').replace('=', '');
         
         let newUser;
         try{
             newUser = await serverConfig.model.User.create({
-                accountID,
+                accountId: accountID,
                 nickname,
                 accountPasswordHash: digestString,
                 accountPasswordsalt: salt
@@ -41,51 +41,51 @@ router.post('/users', async function(req, res){
         }
 
         res.status(201);
-        res.setHeader('Location', req.path + '/' + newUser.userID);
+        res.setHeader('Location', '/v1/users/' + newUser.userId);
         res.end();
     }
     catch(err){
-        handleError(err);
+        handleError(res, err);
     }
 });
 
 
-router.put('/users/:userId/password', function(req, res){
+router.put('/:userId/password', function(req, res){
 
 });
 
 
-router.get('/users/:userId/info', function(req,res){
+router.get('/:userId/info', function(req,res){
     
 });
 
 
-router.patch('/users/:userId/info', function(req, res){
+router.patch('/:userId/info', function(req, res){
 
 });
 
 
-router.post('/users/:userId/medias', function(req, res){
+router.post('/:userId/medias', function(req, res){
 
 });
 
 
-router.get('/users/:userId/medias', function(req, res){
+router.get('/:userId/medias', function(req, res){
     
 });
 
 
-router.get('/users/:userId/subscribers', function(req, res){
+router.get('/:userId/subscribers', function(req, res){
 
 });
 
 
-router.get('/users/:userId/bookmarks', function(req, res){
+router.get('/:userId/bookmarks', function(req, res){
 
 });
 
 
-router.get('/users/:userId/comments', function(req, res){
+router.get('/:userId/comments', function(req, res){
 
 });
 

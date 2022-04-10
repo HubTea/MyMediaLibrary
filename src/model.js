@@ -23,7 +23,7 @@ module.exports = function GetModels(sequelize){
             primaryKey: true
         },
 
-        accountID: {
+        accountId: {
             type: DataTypes.STRING,
             unique: true,
         },
