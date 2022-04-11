@@ -4,28 +4,14 @@ const uuid = require('uuid');
 const path = require('path');
 const assert = require('assert');
 
+const {sendRequest} = require('./testUtil');
+
 const serverConfig = require('../src/serverConfig');
 
 
-function sendRequest(option, body, callback){
-    let chunks = [];
-
-    let req = http.request(option, function(res){
-        res.on('data', function(chunk){
-            chunks.push(chunk);
-        });
-
-        res.on('end', function(){
-            callback(res, Buffer.concat(chunks));
-        });
-    });
-
-    req.write(body);
-    req.end();
-}
-
-
 describe('Test POST /v1/users', function(){
+    this.timeout(5000);
+
     let reqOption;
 
     beforeEach(function(){
@@ -38,10 +24,10 @@ describe('Test POST /v1/users', function(){
         };
     });
 
-    it('Test valid account and password registration', function(done){
+    it('Test valid account and password registration', async function(){
         let body = JSON.stringify({
-            accountID: 'testAccount',
-            accountPassword: 'password',
+            accountID: 'testAccount123',
+            accountPassword: 'password#123',
             nickname: 'test'
         });
 
@@ -49,15 +35,17 @@ describe('Test POST /v1/users', function(){
         reqOption.path = '/v1/users';
         reqOption.headers['Content-Length'] = body.length;
 
-        sendRequest(reqOption, body, function(res, resBody){
-            console.log(res.headers);
-            console.log(resBody.toString());
+        let res = await sendRequest(reqOption, body);
 
-            let newUserUrl = res.headers.location;
-            let newUserId = path.basename(newUserUrl);
+        let resHeader = res.res.headers;
+        let resBody = res.body;
 
-            assert.ok(uuid.validate(newUserId));
-            done();
-        });
+        console.log(resHeader);
+        console.log(resBody.toString());
+
+        let newUserUrl = resHeader.location;
+        let newUserId = path.basename(newUserUrl);
+
+        assert.ok(uuid.validate(newUserId));
     });
 });
