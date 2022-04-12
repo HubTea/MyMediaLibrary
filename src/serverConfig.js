@@ -40,9 +40,11 @@ module.exports = {
     
     pbkdf2: {
         iteration: 30000,
-        hash: 'sha512',
-        digestLenght: 32
+        hash: 'sha512'
     },
+
+    digestLength: 32,
+    saltByteLength: 18,
 
     sqlServer,
     sequelize,
