@@ -38,7 +38,7 @@ router.get('/', async function(req, res){
             serverConfig.pbkdf2.iteration, serverConfig.pbkdf2.hash
         );
         
-        replyAuth(req, res, digest, digestGenerator, user);
+        await replyAuth(req, res, digest, digestGenerator, user);
     }
     catch(err){
         handleError(res, err);
@@ -64,17 +64,19 @@ async function replyAuth(req, res, digest, digestGenerator, userPromise){
 
 async function sendAuthorizer(res, authorizer){
     return new Promise(function(resolve, reject){
-        jwt.sign(
-            {
-                authorizer: authorizer.export()
-            }, 
+        let payload = {
+            authorizer: authorizer.export()
+        };
+        let privateKey = serverConfig.key.private.export({
+            type: 'pkcs1',
+            format: 'pem'
+        });
+        let options = {
+            expiresIn: '7d'
+        };
 
-            serverConfig.key.private, 
 
-            {
-                expiresIn: '7d'
-            },
-
+        jwt.sign(payload, privateKey, options,
             function(err, token){
                 if(err){
                     reject(new error.JwtSignFailedError(err));

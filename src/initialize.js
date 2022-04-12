@@ -10,6 +10,7 @@ async function Main(){
     initializeModels(sequelize);
     await sequelize.sync({force: true});
     console.log('sync complete');
+    await sequelize.close();
 }
 
 Main();

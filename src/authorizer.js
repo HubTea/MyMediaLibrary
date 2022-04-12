@@ -62,7 +62,9 @@ class Authorizer{
      * @param {string} userId 유저의 uuid.
      */
     setAccessibleUser(userId){
-        this.token.user.userId = userId;
+        this.token.user = {
+            userId: userId
+        };
     }
 }
 

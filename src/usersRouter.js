@@ -33,7 +33,7 @@ router.post('/', async function(req, res){
                 accountId: accountID,
                 nickname,
                 accountPasswordHash: digestString,
-                accountPasswordsalt: salt
+                accountPasswordSalt: salt
             });
         }
         catch(err){

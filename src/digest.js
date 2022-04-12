@@ -27,6 +27,7 @@ class DigestPair{
 
 class DigestPairFromDatabase extends DigestPair{
     constructor(model, accountId){
+        super();
         this.model = model;
         this.accountId = accountId;
     }
@@ -57,6 +58,7 @@ class DigestPairFromDatabase extends DigestPair{
 
 class ConstantDigestPair extends DigestPair{
     constructor(digest, salt){
+        super();
         this.setDigestPair(digest, salt);
     }
 
