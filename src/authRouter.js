@@ -11,6 +11,7 @@ const authentication = require('./digest');
 const router = express.Router();
 
 
+//로그인
 router.get('/', async function(req, res){
     try{
         let user;
@@ -46,6 +47,14 @@ router.get('/', async function(req, res){
 });
 
 
+/**
+ * 유저를 인증하고 Authorizer 객체를 생성하여 응답으로 보냄.
+ * @param {*} req 
+ * @param {*} res 
+ * @param {DigestPair} digest 
+ * @param {DigestGenerator} digestGenerator 
+ * @param {User} userPromise 
+ */
 async function replyAuth(req, res, digest, digestGenerator, userPromise){
     //인증
     if(await digest.isEqual(req.body.accountPassword, digestGenerator) === false){
@@ -62,6 +71,12 @@ async function replyAuth(req, res, digest, digestGenerator, userPromise){
 }
 
 
+/**
+ * Authorizer 객체를 담은 jwt를 생성하여 응답으로 보냄.
+ * @param {*} res 
+ * @param {Authorizer} authorizer 
+ * @returns {Promise<void>}
+ */
 async function sendAuthorizer(res, authorizer){
     return new Promise(function(resolve, reject){
         let payload = {

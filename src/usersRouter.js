@@ -10,6 +10,7 @@ const authentication = require('./digest');
 const router = express.Router();
 
 
+//유저 등록
 router.post('/', async function(req, res){
     try{
         let accountID = req.body.accountID;

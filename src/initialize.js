@@ -1,4 +1,5 @@
 //데이터 베이스에 스키마 생성
+//기존의 테이블을 전부 드랍하니 주의
 
 const {Sequelize} = require('sequelize');
 const {sqlServer} = require('./serverConfig');

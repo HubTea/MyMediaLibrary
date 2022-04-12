@@ -22,6 +22,24 @@ class DigestPair{
         }
         return true;
     }
+
+    /**
+     * @returns {object}  
+     * ```
+     * {
+     *      digest,
+     *      salt
+     * }
+     * ```
+     */
+    async getDigestPair(){}
+
+    /**
+     * 
+     * @param {Buffer} digest 
+     * @param {string} salt 
+     */
+    async setDigestPair(digest, salt){}
 }
 
 
@@ -77,7 +95,14 @@ class ConstantDigestPair extends DigestPair{
 
 
 class DigestGenerator{
-    generateDigest(password, salt, digestLength){}
+    /**
+     * 
+     * @param {string} password 
+     * @param {string} salt 
+     * @param {number} digestLength 
+     * @returns {Promise<Buffer>}
+     */
+    async generateDigest(password, salt, digestLength){}
 }
 
 

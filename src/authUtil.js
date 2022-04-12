@@ -3,6 +3,7 @@ const serverConfig = require('./serverConfig');
 const error = require('./error');
 
 
+
 async function getAuthorizer(req){
     const authHeader = req.get('Authorization');
     
@@ -13,7 +14,7 @@ async function getAuthorizer(req){
                 return;
             }
             else{
-                resolve(payload.authorizer);
+                resolve(payload);
                 return;
             }
         });
