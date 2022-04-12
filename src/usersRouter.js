@@ -23,9 +23,9 @@ router.post('/', async function(req, res){
             iteration, hash
         );
 
-        let randomBytes = crypto.randomBytes(18);
+        let randomBytes = crypto.randomBytes(serverConfig.saltByteLength);
         let salt = randomBytes.toString('base64');
-        let digest = await digestGenerator.generateDigest(accountPw, salt, 32);
+        let digest = await digestGenerator.generateDigest(accountPw, salt, serverConfig.digestLength);
         let digestString = digest.toString('base64').replace('=', '');
         
         let newUser;
