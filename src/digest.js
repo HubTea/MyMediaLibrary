@@ -43,16 +43,25 @@ class DigestPair{
 }
 
 
-class DigestPairFromDatabase extends DigestPair{
+class DatabaseDigestPair extends DigestPair{
+    /**
+     * 
+     * @param {Model} model 패스워드 정보를 담고 있는 테이블의 모델
+     * @param {string} accountId 패스워드 주인인 사용자의 accountId
+     */
     constructor(model, accountId){
         super();
         this.model = model;
         this.accountId = accountId;
     }
 
-    async getRow(columns){
-        return await this.model.findOne({
-            attributes: columns,
+    /**
+     * 
+     * @returns {Promise<User>}
+     */
+    getRow(){
+        return this.model.findOne({
+            attributes: ['accountPasswordHash', 'accountPasswordSalt'],
             where: {
                 accountID: this.accountId
             }
@@ -60,7 +69,7 @@ class DigestPairFromDatabase extends DigestPair{
     }
 
     async getDigestPair(){
-        let userRow = await this.getRow(['accountPasswordHash', 'accountPasswordSalt']);
+        let userRow = await this.getRow();
 
         return {
             digest: Buffer.from(userRow.accountPasswordHash, 'base64'),
@@ -69,7 +78,10 @@ class DigestPairFromDatabase extends DigestPair{
     }
 
     async setDigestPair(digest, salt){
-        return null;
+        let user = await this.getRow();
+        user.accountPasswordHash = digest.toString('base64');
+        user.accountPasswordSalt = salt;
+        await user.save();
     }
 }
 
@@ -131,6 +143,6 @@ class Pbkdf2DigestGenerator extends DigestGenerator{
     }
 }
 
-exports.DigestPairFromDatabase = DigestPairFromDatabase;
+exports.DatabaseDigestPair = DatabaseDigestPair;
 exports.ConstantDigestPair = ConstantDigestPair;
 exports.Pbkdf2DigestGenerator = Pbkdf2DigestGenerator;
