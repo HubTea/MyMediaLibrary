@@ -15,12 +15,7 @@ class DigestPair{
             password, digestPair.salt, digestPair.digest.length
         );
         
-        for(let i = 0; i < digestPair.digest.length; i++){
-            if(digestPair.digest[i] !== generatedDigest[i]){
-                return false;
-            }
-        }
-        return true;
+        return digestPair.digest.compare(generatedDigest) === 0;
     }
 
     /**
@@ -63,7 +58,7 @@ class DatabaseDigestPair extends DigestPair{
         return this.model.findOne({
             attributes: ['accountPasswordHash', 'accountPasswordSalt'],
             where: {
-                accountID: this.accountId
+                accountId: this.accountId
             }
         });
     }
