@@ -27,7 +27,7 @@
 GET /v1/auth
 
 {
-	"accountID": string
+	"accountId": string
 		알파벳 대소문자, 숫자로만 구성된 문자열
 
 	"accountPassword": string
@@ -48,7 +48,7 @@ GET /v1/auth
 }
 ```
 
-accountID가 존재하지 않을 때
+accountId가 존재하지 않을 때
 
 ```jsx
 400 Bad Request
@@ -85,7 +85,7 @@ accountPassword가 일치하지 않을 때
 POST /v1/users
 
 {
-	"accountID": string
+	"accountId": string
 		알파벳 대소문자, 숫자로만 구성된 문자열
 
 	"accountPassword": string
@@ -102,7 +102,7 @@ POST /v1/users
 
 ```jsx
 201 Created
-Location: /v1/users/{userID}
+Location: /v1/users/{userId}
 ```
 
 파라미터가 제한사항을 위반했을 때
@@ -123,7 +123,7 @@ Location: /v1/users/{userID}
 요청
 
 ```jsx
-PUT /v1/users/{userID}/password
+PUT /v1/users/{userId}/password
 Authorization: token
 
 {
@@ -162,7 +162,7 @@ Authorization: token
 
 ```jsx
 //인증x
-GET /v1/users/{userID}/info
+GET /v1/users/{userId}/info
 ```
 
 응답
@@ -175,26 +175,24 @@ GET /v1/users/{userID}/info
 {
 	"nickname": string
 	"description": string
-	"thumbnail": string
+	"thumbnailUrl": string
 		썸네일 이미지 파일 URL
 }
 ```
 
 ### 사용자 정보 업데이트
 
-닉네임, 소개문, 썸네일 변경
+닉네임, 소개문 변경
 
 요청
 
 ```jsx
-PATCH /v1/users/{userID}/info
+PATCH /v1/users/{userId}/info
 Authorization: token
 
 {
 	"nickname": string
 	"description": string
-	"thumbnail": string
-		이미지 파일을 base64로 표현한 문자열
 }
 ```
 
@@ -204,6 +202,27 @@ Authorization: token
 
 ```jsx
 200 OK
+```
+
+썸네일 변경
+
+요청
+
+```jsx
+PATCH /v1/users/{userId}/thumbnail
+Authorization: token
+Content-Type: image/jpeg
+
+thumbnail image file
+```
+
+응답
+
+성공시
+
+```jsx
+200 OK
+Location: thumbnail url
 ```
 
 ### 미디어 업로드
@@ -211,7 +230,7 @@ Authorization: token
 요청
 
 ```jsx
-POST /v1/users/{userID}/medias
+POST /v1/users/{userId}/medias
 Authorization: token
 
 {
@@ -240,7 +259,7 @@ Authorization: token
 
 ```jsx
 200 OK
-Location: /v1/medias/{mediaID}
+Location: /v1/medias/{mediaId}
 ```
 
 파일이 너무 클 때
@@ -255,7 +274,7 @@ Location: /v1/medias/{mediaID}
 
 ```jsx
 //인증x
-GET /v1/users/{userID}/medias
+GET /v1/users/{userId}/medias
 
 {
 	"range": {
@@ -298,7 +317,7 @@ GET /v1/users/{userID}/medias
 
 ```jsx
 //인증x
-GET /v1/users/{userID}/subscribes
+GET /v1/users/{userId}/subscribes
 
 {
 	"range": {
@@ -343,7 +362,7 @@ GET /v1/users/{userID}/subscribes
 
 ```jsx
 //인증x
-GET /v1/users/{userID}/bookmarks
+GET /v1/users/{userId}/bookmarks
 
 {
 	"range": {
@@ -386,7 +405,7 @@ GET /v1/users/{userID}/bookmarks
 
 ```jsx
 //인증x
-GET /v1/users/{userID}/comments
+GET /v1/users/{userId}/comments
 
 {
 	"range": {
@@ -411,7 +430,7 @@ GET /v1/users/{userID}/comments
 
 {
 	"commentList": array
-		comment의 commentID 배열
+		comment의 commentId 배열
 
 	"realRange": {
 		"cursor": string
@@ -433,7 +452,7 @@ GET /v1/users/{userID}/comments
 
 ```jsx
 //인증x
-GET /v1/medias/{mediaID}
+GET /v1/medias/{mediaId}
 ```
 
 응답
@@ -449,7 +468,7 @@ GET /v1/medias/{mediaID}
 			"type": string
 				미디어 종류
 
-			"fileURL": string
+			"fileUrl": string
 				파일의 실제 URL
 		},
 		...
@@ -492,7 +511,7 @@ GET /v1/medias
 {
 	"searchResult": array
 		미디어의 URL 배열
-		/v1/medias/{mediaID}
+		/v1/medias/{mediaId}
 
 	"realRange": {
 		"cursor": string
@@ -512,7 +531,7 @@ GET /v1/medias
 
 ```jsx
 //인증x
-GET /v1/medias/{mediaID}/comments
+GET /v1/medias/{mediaId}/comments
 
 {
 	"range": {
@@ -536,7 +555,7 @@ GET /v1/medias/{mediaID}/comments
 {
 	"commentList": [
 		{
-			"commentID": string
+			"commentId": string
 			"parentComment": string
 		},
 		...
