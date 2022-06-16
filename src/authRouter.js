@@ -13,37 +13,29 @@ const router = express.Router();
 
 //로그인
 router.get('/', async function(req, res){
+    let user;
     try{
-        let user;
-        try{
-            user = await serverConfig.model.User.findOne({
-                attributes: ['userId', 'accountPasswordHash', 'accountPasswordSalt'],
-                where: {
-                    accountId: req.body.accountId
-                }
-            });
-        }
-        catch(err){
-            throw new error.InternalError(err);
-        }
-
-        if(user === null){
-            throw error.UserNotExistError(null);
-        }
-
-        const digest = new authentication.ConstantDigestPair(
-            Buffer.from(user.accountPasswordHash, 'base64'), 
-            user.accountPasswordSalt
-        );
-        const digestGenerator = new authentication.Pbkdf2DigestGenerator(
-            serverConfig.pbkdf2.iteration, serverConfig.pbkdf2.hash
-        );
-        
-        await replyAuth(req, res, digest, digestGenerator, user);
+        user = await serverConfig.model.User.findOne({
+            attributes: ['userId'],
+            where: {
+                accountId: req.body.accountId
+            }
+        });
     }
     catch(err){
-        handleError(res, err);
+        throw new error.InternalError(err);
     }
+
+    if(user === null){
+        throw error.UserNotExistError(null);
+    }
+
+    const digestPair = new authentication.DatabaseDigestPair(serverConfig.model.User, req.body.accountId);
+    const digestGenerator = new authentication.Pbkdf2DigestGenerator(
+        serverConfig.pbkdf2.iteration, serverConfig.pbkdf2.hash
+    );
+    
+    await replyAuth(req, res, digestPair, digestGenerator, user);
 });
 
 
@@ -51,13 +43,13 @@ router.get('/', async function(req, res){
  * 유저를 인증하고 Authorizer 객체를 생성하여 응답으로 보냄.
  * @param {*} req 
  * @param {*} res 
- * @param {DigestPair} digest 
+ * @param {DigestPair} digestPair 
  * @param {DigestGenerator} digestGenerator 
  * @param {User} userPromise 
  */
-async function replyAuth(req, res, digest, digestGenerator, userPromise){
+async function replyAuth(req, res, digestPair, digestGenerator, userPromise){
     //인증
-    if(await digest.isEqual(req.body.accountPassword, digestGenerator) === false){
+    if(await digestPair.isEqual(req.body.accountPassword, digestGenerator) === false){
         throw new error.PasswordNotMatchError(null);
     }
 
