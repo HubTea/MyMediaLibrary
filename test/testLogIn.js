@@ -1,39 +1,54 @@
 const assert = require('assert');
 const jwt = require('jsonwebtoken');
 
-const {sendRequest} = require('./testUtil');
+const testUtil = require('./testUtil');
 
 const serverConfig = require('../src/serverConfig');
+const dbInitializer = require('./dbInitializer');
 
 
-describe('Test GET /v1/auth', function(){
+describe('GET /v1/auth 테스트', function(){
+    let requestOption;
+    let request = new testUtil.Request();
 
-    let reqOption;
+    after(function(){
+        dbInitializer.initialize({
+            logging: false
+        });
+    });
 
     beforeEach(function(){
-        reqOption = {
+        requestOption = {
+            method: 'get',
             hostname: 'localhost',
             port: serverConfig.port,
+            path: '/v1/auth',
             headers: {
                 'Content-Type': 'application/json'
             }
         };
     });
 
-    it('Test exist user login', async function(){
-        let body = JSON.stringify({
+    it('등록된 유저 로그인 테스트', async function(){
+        let requestBodyObject = {
             accountId: 'testAccount123',
             accountPassword: 'password#123'
-        });
+        };
 
-        reqOption.method = 'get';
-        reqOption.path = '/v1/auth';
-        reqOption.headers['Content-Length'] = body.length;
+        let requestBody = JSON.stringify(requestBodyObject);
+        requestOption.headers['Content-Length'] = requestBody.length;
 
-        let res = await sendRequest(reqOption, body);
-        console.log(res.body.toString());
-        console.log(jwt.decode(JSON.parse(res.body).token));
+        await testUtil.registUser(JSON.stringify({
+            accountId: requestBodyObject.accountId,
+            accountPassword: requestBodyObject.accountPassword,
+            nickname: 'test123'
+        }));
 
-        
+        request.send(requestOption, requestBody);
+
+        let responseBody = await request.getBodyObject();
+
+        console.log(responseBody);
+        console.log(jwt.decode(responseBody.token));
     });
 });

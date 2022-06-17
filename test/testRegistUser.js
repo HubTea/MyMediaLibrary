@@ -4,46 +4,41 @@ const uuid = require('uuid');
 const path = require('path');
 const assert = require('assert');
 
-const {sendRequest} = require('./testUtil');
-
+const testUtil = require('./testUtil');
 const serverConfig = require('../src/serverConfig');
+const dbInitializer = require('./dbInitializer');
 
 
-describe('Test POST /v1/users', function(){
-    this.timeout(5000);
+describe('POST /v1/users 테스트', function(){
+    let requestOption;
+    let request = new testUtil.Request();
 
-    let reqOption;
-
-    beforeEach(function(){
-        reqOption = {
-            hostname: 'localhost',
-            port: serverConfig.port,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        };
+    after(function(){
+        dbInitializer.initialize({
+            logging: false
+        });
     });
 
-    it('Test valid account and password registration', async function(){
-        let body = JSON.stringify({
-            accountID: 'testAccount123',
+    it('유효한 id와 pw 등록 테스트', async function(){
+        let requestBody = JSON.stringify({
+            accountId: 'testAccount123',
             accountPassword: 'password#123',
-            nickname: 'test'
+            nickname: 'test123'
         });
+        requestOption = testUtil.getRegistUserRequestOption(requestBody);
 
-        reqOption.method = 'post';
-        reqOption.path = '/v1/users';
-        reqOption.headers['Content-Length'] = body.length;
+        request.send(requestOption, requestBody);
 
-        let res = await sendRequest(reqOption, body);
+        let response = await request.getResponse();
+        let responseHeader = response.headers;
+        let responseBody = await request.getBodyBuffer();
 
-        let resHeader = res.res.headers;
-        let resBody = res.body;
+        console.log(responseHeader);
+        console.log(responseBody);
 
-        console.log(resHeader);
-        console.log(resBody.toString());
+        assert.ok(typeof responseHeader.location === 'string');
 
-        let newUserUrl = resHeader.location;
+        let newUserUrl = responseHeader.location;
         let newUserId = path.basename(newUserUrl);
 
         assert.ok(uuid.validate(newUserId));
