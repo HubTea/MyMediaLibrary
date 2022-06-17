@@ -1,45 +1,5 @@
 const http = require('http');
-
-/**
- * 
- * @param {http.RequestOptions} options http모듈에서 http.request 메서드의 options
- * @param {Buffer | string} body http body
- * @returns {Promise<object>} 
- * ```
- * {
- *      res: http모듈에서 http.request 메서드로 보낸 요청에 대한 응답
- *      body: 응답의 http body
- * }
- * ```
- */
-async function sendRequest(options, body){
-    let chunks = [];
-    return new Promise(asyncRequest);
-
-    function asyncRequest(resolve, reject){
-        let req = http.request(options, bindResponseListener);
-        req.on('error', reject);
-        req.write(body);
-        req.end();
-
-        function bindResponseListener(res){
-            res.on('error', reject);
-            res.on('data', appendChunk);
-            res.on('end', emitResponse);
-
-            function appendChunk(chunk){
-                chunks.push(chunk);
-            }
-
-            function emitResponse(){
-                resolve({
-                    res, 
-                    body: Buffer.concat(chunks)
-                });
-            }
-        }
-    }
-}
+const serverConfig = require('../src/serverConfig');
 
 
 class Request{
@@ -56,7 +16,11 @@ class Request{
         this.response = null;
         this.promiseSend = null;
     }
-
+    
+    /**
+     * 
+     * @returns {Promise<http.IncomingMessage>}
+     */
     async getResponse(){
         let resultSend = await this.promiseSend;
         return resultSend.response;
@@ -120,7 +84,28 @@ class Request{
     }
 }
 
+async function registUser(userJson){
+    let requestOption = getRegistUserRequestOption(userJson);
+    let request = new Request();
+    await request.send(requestOption, userJson);
+}
+
+function getRegistUserRequestOption(requestBody){
+    let requestOption = {
+        method: 'post',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: '/v1/users',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': requestBody.length
+        }
+    };
+    return requestOption;
+}
+
 module.exports = {
     Request: Request,
-    sendRequest: sendRequest
+    registUser: registUser,
+    getRegistUserRequestOption: getRegistUserRequestOption
 };
