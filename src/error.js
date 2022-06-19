@@ -1,7 +1,8 @@
 
 
-class ErrorResponse{
+class ErrorResponse extends Error{
     constructor(httpStatusCode, errorCode, underlyingError){
+        super();
         this.httpStatusCode = httpStatusCode;
         this.errorCode = errorCode;
         this.underlyingError = underlyingError;
@@ -11,7 +12,7 @@ class ErrorResponse{
 
 class JwtSignFailedError extends ErrorResponse{
     constructor(underlyingError){
-        super(400, 'TOKEN_SIGIN_FAILED', underlyingError);
+        super(400, 'TOKEN_SIGN_FAILED', underlyingError);
     }
 }
 
