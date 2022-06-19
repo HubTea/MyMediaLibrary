@@ -4,8 +4,8 @@ const jwt = require('jsonwebtoken');
 const auth = require('./authorizer');
 const serverConfig = require('./serverConfig');
 const error = require('./error');
-const {handleError} = require('./errorHandler');
-const authentication = require('./digest');
+const digest = require('./digest');
+const security = require('./securityService');
 
 
 const router = express.Router();
@@ -30,10 +30,8 @@ router.get('/', async function(req, res){
         throw error.UserNotExistError(null);
     }
 
-    const digestPair = new authentication.DatabaseDigestPair(serverConfig.model.User, req.body.accountId);
-    const digestGenerator = new authentication.Pbkdf2DigestGenerator(
-        serverConfig.pbkdf2.iteration, serverConfig.pbkdf2.hash
-    );
+    const digestGenerator = security.digestGenerator;
+    const digestPair = new digest.DatabaseDigestPair(req.body.accountId, digestGenerator);
     
     await replyAuth(req, res, digestPair, digestGenerator, user);
 });
@@ -47,9 +45,9 @@ router.get('/', async function(req, res){
  * @param {DigestGenerator} digestGenerator 
  * @param {User} userPromise 
  */
-async function replyAuth(req, res, digestPair, digestGenerator, userPromise){
+async function replyAuth(req, res, digestPair, userPromise){
     //인증
-    if(await digestPair.isEqual(req.body.accountPassword, digestGenerator) === false){
+    if(await digestPair.isEqual(req.body.accountPassword) === false){
         throw new error.PasswordNotMatchError(null);
     }
 
@@ -69,12 +67,12 @@ async function replyAuth(req, res, digestPair, digestGenerator, userPromise){
  * @param {Authorizer} authorizer 
  * @returns {Promise<void>}
  */
-async function sendAuthorizer(res, authorizer){
+function sendAuthorizer(res, authorizer){
     return new Promise(function(resolve, reject){
         let payload = {
             authorizer: authorizer.export()
         };
-        let privateKey = serverConfig.key.private.export({
+        let privateKey = security.key.private.export({
             type: 'pkcs1',
             format: 'pem'
         });

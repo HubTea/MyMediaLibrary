@@ -2,53 +2,57 @@ const express = require('express');
 const crypto = require('crypto');
 
 const serverConfig = require('./serverConfig');
-const authUtil = require('./authUtil');
 const error = require('./error');
-const {handleError} = require('./errorHandler');
-const authentication = require('./digest');
+const security = require('./securityService');
+const digest = require('./digest');
 
 const router = express.Router();
 
 
 //유저 등록
 router.post('/', async function(req, res){
+    let userObject = await createUserObject({
+        accountId: req.body.accountId,
+        accountPw: req.body.accountPassword,
+        nickname: req.body.nickname
+    });
+    
+    let newUser = await registUser(userObject);
+
+    res.status(201);
+    res.setHeader('Location', '/v1/users/' + newUser.userId);
+    res.end();
+});
+
+async function createUserObject({accountId, accountPw, nickname}){
+    let digestGenerator = security.digestGenerator;
+
+    let randomBytes = crypto.randomBytes(security.digestOption.saltByteLength);
+    let salt = new digest.Codec();
+    salt.setBuffer(randomBytes);
+
+    let saltString = salt.getBase64();
+
+    let generatedDigest = await digestGenerator.generateDigest(accountPw, salt);
+    let digestString = generatedDigest.getBase64();
+
+    return {
+        accountId: accountId,
+        nickname: nickname,
+        accountPasswordHash: digestString,
+        accountPasswordSalt: saltString
+    };
+}
+
+async function registUser(userObject){
     try{
-        let accountID = req.body.accountID;
-        let accountPw = req.body.accountPassword;
-        let nickname = req.body.nickname;
-
-        let iteration = serverConfig.pbkdf2.iteration;
-        let hash = serverConfig.pbkdf2.hash;
-        let digestGenerator = new authentication.Pbkdf2DigestGenerator(
-            iteration, hash
-        );
-
-        let randomBytes = crypto.randomBytes(serverConfig.saltByteLength);
-        let salt = randomBytes.toString('base64');
-        let digest = await digestGenerator.generateDigest(accountPw, salt, serverConfig.digestLength);
-        let digestString = digest.toString('base64').replace('=', '');
-        
-        let newUser;
-        try{
-            newUser = await serverConfig.model.User.create({
-                accountId: accountID,
-                nickname,
-                accountPasswordHash: digestString,
-                accountPasswordSalt: salt
-            });
-        }
-        catch(err){
-            throw new error.InternalError(err);
-        }
-
-        res.status(201);
-        res.setHeader('Location', '/v1/users/' + newUser.userId);
-        res.end();
+        let newUser = await serverConfig.model.User.create(userObject);
+        return newUser;
     }
     catch(err){
-        handleError(res, err);
+        throw new error.InternalError(err);
     }
-});
+}
 
 
 router.put('/:userId/password', function(req, res){
@@ -56,13 +60,49 @@ router.put('/:userId/password', function(req, res){
 });
 
 
-router.get('/:userId/info', function(req,res){
-    
+router.get('/:userId/info', async function(req, res){
+    let userId = req.userId;
+
+    let user = await serverConfig.model.User.findOne({
+        attributes: ['nickname', 'description', 'thumbnailUrl'],
+        where: {
+            userID: userId
+        }
+    });
+
+    if(user === null){
+        throw new error.UserNotExistError(null);
+    }
+
+    res.write(JSON.stringify({
+        nickname: user.nickname,
+        description: user.description,
+        thmbnailUrl: user.thumbnailUrl
+    }));
+    res.end();
 });
 
 
-router.patch('/:userId/info', function(req, res){
+router.patch('/:userId/info', async function(req, res){
+    let userId = req.userId;
+    let userInfo = req.body;
+    let nickname = userInfo.nickname;
+    let description = userInfo.description;
 
+    let user = serverConfig.model.User.findOne({
+        where: {
+            userID: userId
+        }
+    });
+
+    if(user === null){
+        throw new error.UserNotExistError(null);
+    }
+
+    user.nickname = nickname;
+    user.description = description;
+
+    await user.save();
 });
 
 
