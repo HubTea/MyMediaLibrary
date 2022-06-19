@@ -11,8 +11,8 @@ describe('GET /v1/auth 테스트', function(){
     let requestOption;
     let request = new testUtil.Request();
 
-    after(function(){
-        dbInitializer.initialize({
+    after(async function(){
+        await dbInitializer.initialize({
             logging: false
         });
     });
