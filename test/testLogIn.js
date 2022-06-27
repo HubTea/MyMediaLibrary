@@ -8,47 +8,31 @@ const dbInitializer = require('./dbInitializer');
 
 
 describe('GET /v1/auth 테스트', function(){
-    let requestOption;
-    let request = new testUtil.Request();
 
-    after(async function(){
+    beforeEach(async function(){
         await dbInitializer.initialize({
             logging: false
         });
     });
 
-    beforeEach(function(){
-        requestOption = {
-            method: 'get',
-            hostname: 'localhost',
-            port: serverConfig.port,
-            path: '/v1/auth',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        };
-    });
 
     it('등록된 유저 로그인 테스트', async function(){
         let requestBodyObject = {
             accountId: 'testAccount123',
             accountPassword: 'password#123'
         };
-
-        let requestBody = JSON.stringify(requestBodyObject);
-        requestOption.headers['Content-Length'] = requestBody.length;
-
-        await testUtil.registUser(JSON.stringify({
+        
+        let registUserRequest = testUtil.sendRegistUserRequest({
             accountId: requestBodyObject.accountId,
             accountPassword: requestBodyObject.accountPassword,
             nickname: 'test123'
-        }));
+        });
+        await registUserRequest.getResponse();
 
-        request.send(requestOption, requestBody);
+        let logInRequest = testUtil.sendLogInRequest(requestBodyObject);
+        let logInResponseBody = await logInRequest.getBodyObject();
 
-        let responseBody = await request.getBodyObject();
-
-        console.log(responseBody);
-        console.log(jwt.decode(responseBody.token));
+        console.log(logInResponseBody);
+        console.log(jwt.decode(logInResponseBody.token));
     });
 });

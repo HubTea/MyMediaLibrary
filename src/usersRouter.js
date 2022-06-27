@@ -1,5 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
+const sequelize = require('sequelize');
 
 const serverConfig = require('./serverConfig');
 const error = require('./error');
@@ -49,8 +50,17 @@ async function registUser(userObject){
         let newUser = await serverConfig.model.User.create(userObject);
         return newUser;
     }
-    catch(err){
-        throw new error.InternalError(err);
+    catch(userCreationError){
+        handleUserCreationError(userCreationError);
+    }
+}
+
+function handleUserCreationError(userCreationError){
+    if(userCreationError instanceof sequelize.UniqueConstraintError){
+        throw new error.UserAlreadyExistError(userCreationError);
+    }
+    else{
+        throw new error.InternalError(userCreationError);
     }
 }
 

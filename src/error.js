@@ -38,6 +38,13 @@ class UserNotExistError extends ErrorResponse{
 }
 
 
+class UserAlreadyExistError extends ErrorResponse{
+    constructor(underlyingError){
+        super(400, 'USER_ALREADY_EXIST', underlyingError);
+    }
+}
+
+
 class IllegalAccountPasswordError extends ErrorResponse{
     constructor(underlyingError){
         super(400, 'ILLEGAL_ACCOUNT_PASSWORD', underlyingError);
@@ -72,6 +79,7 @@ module.exports = {
     InvalidJwtError,
     PasswordNotMatchError,
     UserNotExistError,
+    UserAlreadyExistError,
     IllegalAccountIdError,
     IllegalAccountPasswordError,
     InternalError,

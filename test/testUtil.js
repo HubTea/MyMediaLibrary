@@ -84,10 +84,17 @@ class Request{
     }
 }
 
-async function registUser(userJson){
-    let requestOption = getRegistUserRequestOption(userJson);
+function sendRegistUserRequest({accountId, accountPassword, nickname}){
+    let requestBody = JSON.stringify({
+        accountId: accountId,
+        accountPassword: accountPassword,
+        nickname: nickname
+    });
+    let requestOption = getRegistUserRequestOption(requestBody);
+
     let request = new Request();
-    await request.send(requestOption, userJson);
+    request.send(requestOption, requestBody);
+    return request;
 }
 
 function getRegistUserRequestOption(requestBody){
@@ -104,8 +111,38 @@ function getRegistUserRequestOption(requestBody){
     return requestOption;
 }
 
+function sendLogInRequest({accountId, accountPassword}){
+    let requestBody = JSON.stringify({
+        accountId: accountId,
+        accountPassword: accountPassword,
+    });
+    let requestOption = getLogInRequestOption(requestBody);
+
+    let request = new Request();
+    request.send(requestOption, requestBody);
+    return request;
+}
+
+function getLogInRequestOption(requestBody){
+    let requestOption = {
+        method: 'get',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: '/v1/auth',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': requestBody.length
+        }
+    };
+    return requestOption;
+}
+
 module.exports = {
     Request: Request,
-    registUser: registUser,
-    getRegistUserRequestOption: getRegistUserRequestOption
+
+    sendRegistUserRequest: sendRegistUserRequest,
+    sendLogInRequest: sendLogInRequest,
+
+    getRegistUserRequestOption: getRegistUserRequestOption,
+    getLogInRequestOption: getLogInRequestOption
 };
