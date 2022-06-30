@@ -12,11 +12,12 @@ const dbInitializer = require('./dbInitializer');
 async function registUser({accountId, accountPassword, nickname}){
     let request = testUtil.sendRegistUserRequest({accountId, accountPassword, nickname});
     let response = await request.getResponse();
-    assertLocationHeader(response);
+
+    assertUserUrlIn(response);
 }
 
 
-function assertLocationHeader(response){
+function assertUserUrlIn(response){
     let responseHeader = response.headers;
 
     console.log(`response header: ${responseHeader}`);
@@ -37,12 +38,7 @@ async function registDuplicatedUser({accountId, accountPassword, nickname}){
     let duplicatedUserRequest = testUtil.sendRegistUserRequest({accountId, accountPassword, nickname});
     let response = await duplicatedUserRequest.getResponse();
 
-    assertErrorResponse(response);
-}
-
-
-function assertErrorResponse(response){
-    assert.strictEqual(response.statusCode === 400);
+    assert.strictEqual(response.statusCode, 400);
 }
 
 
