@@ -4,6 +4,7 @@ const sequelize = require('sequelize');
 
 const serverConfig = require('./serverConfig');
 const error = require('./error');
+const errorHandler = require('./errorHandler');
 const security = require('./securityService');
 const digest = require('./digest');
 
@@ -18,11 +19,16 @@ router.post('/', async function(req, res){
         nickname: req.body.nickname
     });
     
-    let newUser = await registUser(userObject);
+    try{
+        let newUser = await registUser(userObject);
 
-    res.status(201);
-    res.setHeader('Location', '/v1/users/' + newUser.userId);
-    res.end();
+        res.status(201);
+        res.setHeader('Location', '/v1/users/' + newUser.userId);
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
 async function createUserObject({accountId, accountPw, nickname}){
@@ -59,8 +65,11 @@ function handleUserCreationError(userCreationError){
     if(userCreationError instanceof sequelize.UniqueConstraintError){
         throw new error.UserAlreadyExistError(userCreationError);
     }
+    else if (userCreationError instanceof sequelize.BaseError){
+        throw new error.DatabaseError(userCreationError);
+    }
     else{
-        throw new error.InternalError(userCreationError);
+        throw userCreationError;
     }
 }
 

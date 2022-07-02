@@ -59,6 +59,14 @@ class IllegalAccountIdError extends ErrorResponse{
 }
 
 
+class DatabaseError extends ErrorResponse{
+    constructor(underlyingError){
+        super(500, 'QUERY_FAILED_ERROR', underlyingError);
+    }
+
+}
+
+
 class InternalError extends ErrorResponse{
     constructor(underlyingError){
         super(500, 'INTERNAL_ERROR', underlyingError);
@@ -82,6 +90,7 @@ module.exports = {
     UserAlreadyExistError,
     IllegalAccountIdError,
     IllegalAccountPasswordError,
+    DatabaseError,
     InternalError,
     UnexpectedError
 };
