@@ -125,7 +125,7 @@ function sendLogInRequest({accountId, accountPassword}){
 
 function getLogInRequestOption(requestBody){
     let requestOption = {
-        method: 'get',
+        method: 'post',
         hostname: 'localhost',
         port: serverConfig.port,
         path: '/v1/auth',

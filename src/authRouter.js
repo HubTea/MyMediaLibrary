@@ -12,7 +12,7 @@ const router = express.Router();
 
 
 //로그인
-router.get('/', async function(req, res){
+router.post('/', async function(req, res){
     let user;
     try{
         user = await serverConfig.model.User.findOne({

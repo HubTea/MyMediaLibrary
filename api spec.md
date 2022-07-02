@@ -24,7 +24,7 @@
 
 ```jsx
 //인증x
-GET /v1/auth
+POST /v1/auth
 
 {
 	"accountId": string
