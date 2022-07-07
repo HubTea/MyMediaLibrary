@@ -20,7 +20,7 @@ router.post('/', async function(req, res){
     });
     
     try{
-        let newUser = await registUser(userObject);
+        let newUser = await registerUser(userObject);
 
         res.status(201);
         res.setHeader('Location', '/v1/users/' + newUser.userId);
@@ -51,7 +51,7 @@ async function createUserObject({accountId, accountPw, nickname}){
     };
 }
 
-async function registUser(userObject){
+async function registerUser(userObject){
     try{
         let newUser = await serverConfig.model.User.create(userObject);
         return newUser;
