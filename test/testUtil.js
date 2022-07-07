@@ -84,20 +84,20 @@ class Request{
     }
 }
 
-function sendRegistUserRequest({accountId, accountPassword, nickname}){
+function sendRegisterUserRequest({accountId, accountPassword, nickname}){
     let requestBody = JSON.stringify({
         accountId: accountId,
         accountPassword: accountPassword,
         nickname: nickname
     });
-    let requestOption = getRegistUserRequestOption(requestBody);
+    let requestOption = getRegisterUserRequestOption(requestBody);
 
     let request = new Request();
     request.send(requestOption, requestBody);
     return request;
 }
 
-function getRegistUserRequestOption(requestBody){
+function getRegisterUserRequestOption(requestBody){
     let requestOption = {
         method: 'post',
         hostname: 'localhost',
@@ -138,11 +138,11 @@ function getLogInRequestOption(requestBody){
 }
 
 module.exports = {
-    Request: Request,
+    Request,
 
-    sendRegistUserRequest: sendRegistUserRequest,
-    sendLogInRequest: sendLogInRequest,
+    sendRegisterUserRequest,
+    sendLogInRequest,
 
-    getRegistUserRequestOption: getRegistUserRequestOption,
-    getLogInRequestOption: getLogInRequestOption
+    getRegisterUserRequestOption,
+    getLogInRequestOption
 };

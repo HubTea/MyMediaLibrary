@@ -7,32 +7,35 @@ const serverConfig = require('../src/serverConfig');
 const dbInitializer = require('./dbInitializer');
 
 
-describe('GET /v1/auth 테스트', function(){
+async function testLogIn({accountId, accountPassword}){
+    let registUserRequest = testUtil.sendRegisterUserRequest({
+        accountId: accountId,
+        accountPassword: accountPassword,
+        nickname: 'test'
+    });
+    await registUserRequest.getResponse();
 
+    let logInRequest = testUtil.sendLogInRequest({
+        accountId: accountId,
+        accountPassword: accountPassword
+    });
+    let logInResponseBody = await logInRequest.getBodyObject();
+
+    console.log(logInResponseBody);
+    console.log(jwt.decode(logInResponseBody.token));
+}
+
+describe('GET /v1/auth 테스트', function(){
     beforeEach(async function(){
         await dbInitializer.initialize({
             logging: false
         });
     });
 
-
     it('등록된 유저 로그인 테스트', async function(){
-        let requestBodyObject = {
+        await testLogIn({
             accountId: 'testAccount123',
             accountPassword: 'password#123'
-        };
-        
-        let registUserRequest = testUtil.sendRegistUserRequest({
-            accountId: requestBodyObject.accountId,
-            accountPassword: requestBodyObject.accountPassword,
-            nickname: 'test123'
         });
-        await registUserRequest.getResponse();
-
-        let logInRequest = testUtil.sendLogInRequest(requestBodyObject);
-        let logInResponseBody = await logInRequest.getBodyObject();
-
-        console.log(logInResponseBody);
-        console.log(jwt.decode(logInResponseBody.token));
     });
 });
