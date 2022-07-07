@@ -7,7 +7,7 @@ const serverConfig = require('../src/serverConfig');
 const dbInitializer = require('./dbInitializer');
 
 
-async function testLogIn({accountId, accountPassword}){
+async function testRegisteredUserLogIn({accountId, accountPassword}){
     let registUserRequest = testUtil.sendRegisterUserRequest({
         accountId: accountId,
         accountPassword: accountPassword,
@@ -33,7 +33,7 @@ describe('GET /v1/auth 테스트', function(){
     });
 
     it('등록된 유저 로그인 테스트', async function(){
-        await testLogIn({
+        await testRegisteredUserLogIn({
             accountId: 'testAccount123',
             accountPassword: 'password#123'
         });
