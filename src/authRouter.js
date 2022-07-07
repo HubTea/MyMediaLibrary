@@ -1,9 +1,11 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const sequelize = require('sequelize');
 
 const auth = require('./authorizer');
 const serverConfig = require('./serverConfig');
 const error = require('./error');
+const errorHandler = require('./errorHandler');
 const digest = require('./digest');
 const security = require('./securityService');
 
@@ -13,28 +15,48 @@ const router = express.Router();
 
 //로그인
 router.post('/', async function(req, res){
-    let user;
+    try{
+        let accountId = req.body.accountId;
+        let user = await getUserIdFromAccountId(accountId);
+
+        const digestGenerator = security.digestGenerator;
+        const digestPair = new digest.DatabaseDigestPair(accountId, digestGenerator);
+        
+        await replyAuth(req, res, digestPair, digestGenerator, user);
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
+});
+
+async function getUserIdFromAccountId(accountId){
     try{
         user = await serverConfig.model.User.findOne({
             attributes: ['userId'],
             where: {
-                accountId: req.body.accountId
+                accountId: accountId
             }
         });
     }
-    catch(err){
-        throw new error.InternalError(err);
+    catch(userFindError){
+        wrapUserFindError(userFindError);
     }
 
     if(user === null){
-        throw error.UserNotExistError(null);
+        throw new error.UserNotExistError(null);
     }
 
-    const digestGenerator = security.digestGenerator;
-    const digestPair = new digest.DatabaseDigestPair(req.body.accountId, digestGenerator);
-    
-    await replyAuth(req, res, digestPair, digestGenerator, user);
-});
+    return user;
+}
+
+function wrapUserFindError(userFindError){
+    if(userFindError instanceof sequelize.BaseError){
+        throw new error.DatabaseError(userFindError);
+    }
+    else{
+        throw userFindError;
+    }
+}
 
 
 /**
@@ -43,9 +65,9 @@ router.post('/', async function(req, res){
  * @param {*} res 
  * @param {DigestPair} digestPair 
  * @param {DigestGenerator} digestGenerator 
- * @param {User} userPromise 
+ * @param {User} user 
  */
-async function replyAuth(req, res, digestPair, userPromise){
+async function replyAuth(req, res, digestPair, user){
     //인증
     if(await digestPair.isEqual(req.body.accountPassword) === false){
         throw new error.PasswordNotMatchError(null);
@@ -53,7 +75,6 @@ async function replyAuth(req, res, digestPair, userPromise){
 
     //권한 부여
     const authorizer = new auth.Authorizer({});
-    const user = await userPromise;
 
     authorizer.setAccessibleUser(user.userId);
 
@@ -79,7 +100,6 @@ function sendAuthorizer(res, authorizer){
         let options = {
             expiresIn: '7d'
         };
-
 
         jwt.sign(payload, privateKey, options,
             function(err, token){
