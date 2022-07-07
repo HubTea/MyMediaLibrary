@@ -5,7 +5,7 @@ const path = require('path');
 const assert = require('assert');
 
 const testUtil = require('./testUtil');
-const serverConfig = require('../src/serverConfig');
+const error = require('../src/error');
 const dbInitializer = require('./dbInitializer');
 
 
@@ -28,6 +28,7 @@ function assertUserUrlIn(response){
     let newUserUrl = responseHeader.location;
     let newUserId = path.basename(newUserUrl);
 
+    assert.strictEqual(response.statusCode, 201);
     assert.ok(uuid.validate(newUserId));
 }
 
@@ -41,8 +42,10 @@ async function testRegisterDuplicatedUser({accountId, accountPassword, nickname}
         accountId, accountPassword, nickname
     });
     let response = await duplicatedUserRequest.getResponse();
+    let body = await duplicatedUserRequest.getBodyObject();
 
     assert.strictEqual(response.statusCode, 400);
+    assert.strictEqual(body.error.code, new error.UserAlreadyExistError().errorCode);
 }
 
 describe('POST /v1/users 테스트', function(){
