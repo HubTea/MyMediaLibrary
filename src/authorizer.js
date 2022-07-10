@@ -24,7 +24,7 @@ class Authorizer{
      */
     constructor(token){
         if(typeof(token) == 'string'){
-            this.token = JSON.stringify(token);
+            this.token = JSON.parse(token);
         }
         else{
             this.token = token;
