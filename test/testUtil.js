@@ -137,12 +137,56 @@ function getLogInRequestOption(requestBody){
     return requestOption;
 }
 
+function sendPatchUserMetadataRequest({userId, token, nickname, introduction}){
+    let requestBody = JSON.stringify({
+        nickname: nickname,
+        introduction: introduction
+    });
+    let requestOption = getPatchUserMetadataOption(userId, token, requestBody);
+
+    let request = new Request();
+    request.send(requestOption, requestBody);
+    return request;
+}
+
+function getPatchUserMetadataOption(userId, token, requestBody){
+    let requestOption = {
+        method: 'patch',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: `/v1/users/${userId}/info`,
+        headers: {
+            'Authorization': token,
+            'Content-Type': 'application/json',
+            'Content-Length': requestBody.length
+        }
+    };
+    return requestOption;
+}
+
+function sendGetUserMetadataRequest({userId}){
+    let requestOption = getGetUserMetadataOption(userId);
+
+    let request = new Request();
+    request.send(requestOption, "");
+    return request;
+}
+
+function getGetUserMetadataOption(userId){
+    let requestOption = {
+        method: 'get',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: `/v1/users/${userId}/info`
+    };
+    return requestOption;
+}
+
 module.exports = {
     Request,
 
     sendRegisterUserRequest,
     sendLogInRequest,
-
-    getRegisterUserRequestOption,
-    getLogInRequestOption
+    sendPatchUserMetadataRequest,
+    sendGetUserMetadataRequest
 };
