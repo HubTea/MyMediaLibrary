@@ -10,20 +10,20 @@ let pbkdf2Option = {
     hash: 'sha512'
 };
 
-
 let digestOption = {
     digestLength: 32,
     saltByteLength: 18
 };
 
-
 const privateKey = crypto.createPrivateKey(
     fs.readFileSync(process.env.PrivateKeyPath)
 );
 const publicKey = crypto.createPublicKey(privateKey);
-let key = {
+const hmacKey = fs.readFileSync(process.env.HmacKeyPath);
+const key = {
     private: privateKey,
-    public: publicKey
+    public: publicKey,
+    hmac: hmacKey
 };
 
 module.exports = {
@@ -31,4 +31,4 @@ module.exports = {
     digestOption: digestOption,
     key: key,
     digestGenerator: new digest.Pbkdf2DigestGenerator(pbkdf2Option.iteration, pbkdf2Option.hash, digestOption.digestLength)
-}
+};

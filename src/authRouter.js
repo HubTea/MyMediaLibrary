@@ -93,15 +93,13 @@ function sendAuthorizer(res, authorizer){
         let payload = {
             authorizer: authorizer.export()
         };
-        let privateKey = security.key.private.export({
-            type: 'pkcs1',
-            format: 'pem'
-        });
+        let key = security.key.hmac;
         let options = {
+            algorithm: 'HS256',
             expiresIn: '7d'
         };
 
-        jwt.sign(payload, privateKey, options,
+        jwt.sign(payload, key, options,
             function(err, token){
                 if(err){
                     reject(new error.JwtSignFailedError(err));
