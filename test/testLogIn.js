@@ -39,7 +39,7 @@ async function testUnregisteredUserLogIn({accountId, accountPassword}){
     assert.strictEqual(body.error.code, new error.UserNotExistError().errorCode);
 }
 
-describe('GET /v1/auth 테스트', function(){
+describe('POST /v1/auth 테스트', function(){
     beforeEach(async function(){
         await dbInitializer.initialize({
             logging: false
