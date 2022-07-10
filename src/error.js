@@ -67,6 +67,19 @@ class DatabaseError extends ErrorResponse{
 }
 
 
+class OmittedParameterError extends ErrorResponse{
+    constructor(underlyingError){
+        super(400, 'PARAMETER_OMITTED', underlyingError);
+
+        this.parameter = [];
+    }
+
+    appendParameter(name){
+        this.parameter.push(name);
+    }
+}
+
+
 class InternalError extends ErrorResponse{
     constructor(underlyingError){
         super(500, 'INTERNAL_ERROR', underlyingError);
@@ -91,6 +104,7 @@ module.exports = {
     IllegalAccountIdError,
     IllegalAccountPasswordError,
     DatabaseError,
+    OmittedParameterError,
     InternalError,
     UnexpectedError
 };
