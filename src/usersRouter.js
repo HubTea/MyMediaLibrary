@@ -3,29 +3,29 @@ const crypto = require('crypto');
 const sequelize = require('sequelize');
 const jwt = require('jsonwebtoken');
 
-const serverConfig = require('./serverConfig');
 const error = require('./error');
 const errorHandler = require('./errorHandler');
 const security = require('./securityService');
 const digest = require('./digest');
 const authorizer = require('./authorizer');
+const userRepository = require('./repository/userRepository');
 
 const router = express.Router();
 
 
 //유저 등록
 router.post('/', async function(req, res){
-    let userObject = await createUserObject({
-        accountId: req.body.accountId,
-        accountPw: req.body.accountPassword,
-        nickname: req.body.nickname
-    });
-    
     try{
-        let newUser = await registerUser(userObject);
+        let userSeed = await createUserSeed({
+            accountId: req.body.accountId,
+            accountPw: req.body.accountPassword,
+            nickname: req.body.nickname
+        });
+
+        let newUser = await userRepository.createUser(userSeed);
 
         res.status(201);
-        res.setHeader('Location', '/v1/users/' + newUser.userId);
+        res.setHeader('Location', `/v1/users/${newUser.userId}`);
         res.end();
     }
     catch(err){
@@ -33,7 +33,7 @@ router.post('/', async function(req, res){
     }
 });
 
-async function createUserObject({accountId, accountPw, nickname}){
+async function createUserSeed({accountId, accountPw, nickname}){
     let digestGenerator = security.digestGenerator;
 
     let randomBytes = crypto.randomBytes(security.digestOption.saltByteLength);
@@ -48,31 +48,9 @@ async function createUserObject({accountId, accountPw, nickname}){
     return {
         accountId: accountId,
         nickname: nickname,
-        accountPasswordHash: digestString,
-        accountPasswordSalt: saltString
+        hash: digestString,
+        salt: saltString
     };
-}
-
-async function registerUser(userObject){
-    try{
-        let newUser = await serverConfig.model.User.create(userObject);
-        return newUser;
-    }
-    catch(userCreationError){
-        handleUserCreationError(userCreationError);
-    }
-}
-
-function handleUserCreationError(userCreationError){
-    if(userCreationError instanceof sequelize.UniqueConstraintError){
-        throw new error.UserAlreadyExistError(userCreationError);
-    }
-    else if (userCreationError instanceof sequelize.BaseError){
-        throw new error.DatabaseError(userCreationError);
-    }
-    else{
-        throw userCreationError;
-    }
 }
 
 
@@ -82,27 +60,14 @@ router.put('/:userId/password', function(req, res){
 
 
 router.get('/:userId/info', async function(req, res){
-    let userId = req.params.userId;
-
     try{
-        let user = await getUserInstance(userId, ['nickname', 'introduction', 'thumbnailUrl']);
-
-        if(!user.nickname){
-            user.nickname = '';
-        }
-
-        if(!user.introduction){
-            user.introduction = '';
-        }
-
-        if(!user.thumbnailUrl){
-            user.thumbnailUrl = '';
-        }
+        let userId = req.params.userId;
+        let user = await userRepository.getUserByUserId(userId);
 
         res.write(JSON.stringify({
-            nickname: user.nickname,
-            introduction: user.introduction,
-            thumbnailUrl: user.thumbnailUrl
+            nickname: user.nickname || '',
+            introduction: user.introduction || '',
+            thumbnailUrl: user.thumbnailUrl || ''
         }));
         res.end();
     }
@@ -138,12 +103,12 @@ router.patch('/:userId/info', async function(req, res){
     }
     
     try{
-        let user = await getUserInstance(userId, ['userId', 'nickname', 'introduction']);
+        let user = await userRepository.getUserByUserId(userId);
 
         user.nickname = nickname;
         user.introduction = introduction;
     
-        await user.save();
+        await userRepository.setUser(user);
     
         res.status(200);
         res.end();
@@ -171,35 +136,6 @@ function getTokenPayload(token){
     });
 }
 
-async function getUserInstance(userId, attributes){
-    let user;
-    try{
-        user = await serverConfig.model.User.findOne({
-            attributes: attributes,
-            where: {
-                userId: userId
-            }
-        });
-    }
-    catch(userFindError){
-        wrapUserFindError(userFindError);
-    }
-
-    if(user === null){
-        throw new error.UserNotExistError(null);
-    }
-
-    return user;
-}
-
-function wrapUserFindError(userFindError){
-    if(userFindError instanceof sequelize.BaseError){
-        throw new error.DatabaseError(userFindError);
-    }
-    else{
-        throw userFindError;
-    }
-}
 
 router.post('/:userId/medias', function(req, res){
 

@@ -1,13 +1,12 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const sequelize = require('sequelize');
 
 const auth = require('./authorizer');
-const serverConfig = require('./serverConfig');
 const error = require('./error');
 const errorHandler = require('./errorHandler');
 const digest = require('./digest');
 const security = require('./securityService');
+const userRepository = require('./repository/userRepository');
 
 
 const router = express.Router();
@@ -17,46 +16,17 @@ const router = express.Router();
 router.post('/', async function(req, res){
     try{
         let accountId = req.body.accountId;
-        let userId = await getUserIdFromAccountId(accountId);
+        let user = await userRepository.getUserByAccountId(accountId);
 
         const digestGenerator = security.digestGenerator;
         const digestPair = new digest.DatabaseDigestPair(accountId, digestGenerator);
         
-        await replyAuth(req, res, digestPair, userId);
+        await replyAuth(req, res, digestPair, user.userId);
     }
     catch(err){
         errorHandler.handleError(res, err);
     }
 });
-
-async function getUserIdFromAccountId(accountId){
-    try{
-        user = await serverConfig.model.User.findOne({
-            attributes: ['userId'],
-            where: {
-                accountId: accountId
-            }
-        });
-    }
-    catch(userFindError){
-        wrapUserFindError(userFindError);
-    }
-
-    if(user === null){
-        throw new error.UserNotExistError(null);
-    }
-
-    return user.userId;
-}
-
-function wrapUserFindError(userFindError){
-    if(userFindError instanceof sequelize.BaseError){
-        throw new error.DatabaseError(userFindError);
-    }
-    else{
-        throw userFindError;
-    }
-}
 
 
 /**
