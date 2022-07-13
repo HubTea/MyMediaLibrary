@@ -8,11 +8,18 @@ const usersRouter = require('./usersRouter');
 const app = express();
 const router = express.Router();
 
+let contextId = 0;
 
 app.listen(serverConfig.port, function(){
     console.log('listening');
 });
 
+app.use(function(req, res, next){
+    req.myContext = {
+        contextId: contextId++
+    };
+    next();
+});
 app.use(function(req, res, next){
     console.log('request: ' + req.method + ' ' + req.originalUrl);
     next();
