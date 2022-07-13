@@ -7,6 +7,10 @@ class ErrorResponse extends Error{
         this.errorCode = errorCode;
         this.underlyingError = underlyingError;
     }
+
+    evaluateMessage(){
+
+    }
 }
 
 
@@ -19,7 +23,7 @@ class JwtSignFailedError extends ErrorResponse{
 
 class InvalidJwtError extends ErrorResponse{
     constructor(underlyingError){
-        super(400, 'INVALID_TOKEN', underlyingError);
+        super(403, 'INVALID_TOKEN', underlyingError);
     }
 }
 
@@ -76,6 +80,11 @@ class OmittedParameterError extends ErrorResponse{
 
     appendParameter(name){
         this.parameter.push(name);
+        this.evaluateMessage();
+    }
+
+    evaluateMessage(){
+        this.message = `생략된 파라미터: ${this.parameter.toString()}`;
     }
 }
 
