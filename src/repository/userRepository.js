@@ -9,8 +9,8 @@ const error = require('../error');
  * @param {string} userId 
  * @returns {Promise<object>} user value object
  */
-function getUserByUserId(userId){
-    return getOneUser({
+async function getUserByUserId(userId){
+    return await getOneUser({
         where: {
             userId: userId
         }
@@ -22,8 +22,8 @@ function getUserByUserId(userId){
  * @param {string} accountId 
  * @returns {Promise<object>} user value object
  */
-function getUserByAccountId(accountId){
-    return getOneUser({
+async function getUserByAccountId(accountId){
+    return await getOneUser({
         where: {
             accountId: accountId
         }
