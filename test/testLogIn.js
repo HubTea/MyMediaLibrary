@@ -7,12 +7,12 @@ const dbInitializer = require('./dbInitializer');
 
 
 async function testRegisteredUserLogIn({accountId, accountPassword}){
-    let registUserRequest = testUtil.sendRegisterUserRequest({
+    let registerUserRequest = testUtil.sendRegisterUserRequest({
         accountId: accountId,
         accountPassword: accountPassword,
         nickname: 'test'
     });
-    await registUserRequest.getResponse();
+    await registerUserRequest.getResponse();
 
     let logInRequest = testUtil.sendLogInRequest({
         accountId: accountId,
