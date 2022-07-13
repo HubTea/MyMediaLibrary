@@ -6,12 +6,24 @@ function handleError(res, err){
         err = new error.UnexpectedError(err);
     }
     
-    console.error(err);
+    let recursiveError = err;
+
+    while(recursiveError){
+        console.error(`error code: ${recursiveError.errorCode}`);
+        console.error(`message: ${recursiveError.message}`);
+        console.error(`stack: ${recursiveError.stack}`);
+        console.error(recursiveError.underlyingError);
+
+        recursiveError = recursiveError.underlyingError;
+    }
+    
+    
 
     res.status(err.httpStatusCode);
     res.write(JSON.stringify({
         error: {
-            code: err.errorCode
+            code: err.errorCode,
+            message: err.message
         }
     }));
     res.end();
