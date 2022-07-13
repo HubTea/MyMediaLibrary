@@ -4,26 +4,16 @@ const testUtil = require('./testUtil');
 
 
 async function testGetUserMetadata({accountId, nickname, introduction}){
-    let password = 'tempPassword';
+    let tempPassword = 'tempPassword';
+    let tempNickname = 'tempNickname';
 
-    let registerUserRequest = testUtil.sendRegisterUserRequest({
+    let { userId, token } = await testUtil.registerUserAndLogIn({
         accountId: accountId,
-        accountPassword: password,
-        nickname: 'tempNickname'
+        accountPassword: tempPassword,
+        nickname: tempNickname
     });
-    let registerUserResponse = await registerUserRequest.getResponse();
-    let userPath = registerUserResponse.headers.location;
-    let splittedPath = userPath.split('/');
-    let userId = splittedPath[splittedPath.length - 1];
 
-    console.log(`userID: ${userId}`);
-
-    let logInRequest = testUtil.sendLogInRequest({
-        accountId: accountId,
-        accountPassword: password
-    });
-    let logInBody = await logInRequest.getBodyObject();
-    let token = logInBody.token;
+    console.log(`userId: ${userId}`);
 
     let patchUserMetadataRequest = testUtil.sendPatchUserMetadataRequest({
         userId: userId,

@@ -33,6 +33,10 @@ class Request{
 
     async getBodyObject(){
         let resultSend = await this.promiseSend;
+
+        if(resultSend.body.length === 0){
+            return {};
+        }
         return JSON.parse(resultSend.body);
     }
     
@@ -43,7 +47,7 @@ class Request{
      * @returns {Promise<object>}
      * ```
      * {
-     *      response: http.IncommingMessage,
+     *      response: http.IncomingMessage,
      *      body: Buffer
      * }
      * ```
@@ -83,6 +87,7 @@ class Request{
         });
     }
 }
+
 
 function sendRegisterUserRequest({accountId, accountPassword, nickname}){
     let requestBody = JSON.stringify({
@@ -182,11 +187,37 @@ function getGetUserMetadataOption(userId){
     return requestOption;
 }
 
+async function registerUserAndLogIn({accountId, accountPassword, nickname}){
+    let registerUserRequest = sendRegisterUserRequest({
+        accountId: accountId,
+        accountPassword: accountPassword,
+        nickname: nickname
+    });
+    let registerUserResponse = await registerUserRequest.getResponse();
+    let userPath = registerUserResponse.headers.location;
+    let splittedPath = userPath.split('/');
+    let userId = splittedPath[splittedPath.length - 1];
+
+    let logInRequest = sendLogInRequest({
+        accountId: accountId,
+        accountPassword: accountPassword
+    });
+    let logInBody = await logInRequest.getBodyObject();
+    let token = logInBody.token;
+
+    return {
+        userId: userId,
+        token: token,
+    };
+}
+
 module.exports = {
     Request,
 
     sendRegisterUserRequest,
     sendLogInRequest,
     sendPatchUserMetadataRequest,
-    sendGetUserMetadataRequest
+    sendGetUserMetadataRequest,
+
+    registerUserAndLogIn
 };
