@@ -107,7 +107,7 @@ router.post('/:userId/medias', async function(req, res){
         let userId = req.params.userId;
         let title = req.body.title;
         let description = req.body.description;
-        let type = req.get('Content-Type');
+        let type = req.body.type;
 
         let authorizer = await checker.checkAuthorizationHeader(req);
 
