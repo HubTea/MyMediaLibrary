@@ -46,7 +46,7 @@ async function getOneUser(queryOption){
         return userToValueObject(user);
     }
     catch(userFindError){
-        throw wrapSequelizeError(userFindError);
+        throw error.wrapSequelizeError(userFindError);
     }
 }
 
@@ -91,7 +91,7 @@ function wrapUserCreateError(userCreationError){
         return new error.UserAlreadyExistError(userCreationError);
     }
     else{
-        return wrapSequelizeError(userCreationError);
+        return error.wrapSequelizeError(userCreationError);
     }
 }
 
@@ -115,16 +115,7 @@ async function setUser(userValueObject){
         return userValueObject;
     }
     catch(userUpdateError){
-        throw wrapSequelizeError(userUpdateError);
-    }
-}
-
-function wrapSequelizeError(err){
-    if(err instanceof sequelize.BaseError){
-        return new error.DatabaseError(err);
-    }
-    else{
-        return err;
+        throw error.wrapSequelizeError(userUpdateError);
     }
 }
 
