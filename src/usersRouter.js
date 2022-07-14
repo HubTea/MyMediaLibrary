@@ -1,14 +1,11 @@
 const express = require('express');
 const crypto = require('crypto');
-const sequelize = require('sequelize');
-const jwt = require('jsonwebtoken');
 
-const error = require('./error');
 const errorHandler = require('./errorHandler');
 const security = require('./securityService');
 const digest = require('./digest');
-const authorizer = require('./authorizer');
 const userRepository = require('./repository/userRepository');
+const mediaRepository = require('./repository/mediaRepository');
 const checker = require('./checker');
 
 const router = express.Router();
@@ -105,13 +102,37 @@ router.patch('/:userId/info', async function(req, res){
 });
 
 
-router.post('/:userId/medias', function(req, res){
+router.post('/:userId/medias', async function(req, res){
+    try{
+        let userId = req.params.userId;
+        let title = req.body.title;
+        let description = req.body.description;
+        let type = req.get('Content-Type');
 
+        let authorizer = await checker.checkAuthorizationHeader(req);
+
+        checker.checkUserAuthorization(authorizer, userId);
+
+        let mediaEntity = new mediaRepository.MediaEntity();
+        let mediaValueObject = await mediaEntity.createMetadata({
+            title: title,
+            description: description,
+            type: type,
+            uploader: userId
+        });
+
+        res.status(201);
+        res.setHeader('Location', `/v1/medias/${mediaValueObject.mediaId}`);
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
 
 router.get('/:userId/medias', function(req, res){
-    
+
 });
 
 
