@@ -69,17 +69,31 @@ module.exports = function GetModels(sequelize){
             }
         },
 
-        title: DataTypes.STRING,
-        description: DataTypes.STRING,
+        title: {
+            type: DataTypes.STRING,
+            defaultValue: ''
+        },
+
+        description: {
+            type: DataTypes.STRING,
+            defaultValue: ''
+        },
+
         type: DataTypes.STRING,
-        url: DataTypes.STRING,
         updateTime: DataTypes.DATE,
-        viewCount: DataTypes.INTEGER,
-        dislikeCount: DataTypes.INTEGER,
-        thumbnailUrl: DataTypes.STRING
+
+        viewCount: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0
+        },
+
+        dislikeCount: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0
+        }
     }, {
         sequelize,
-        modelName: 'Media',
+        modelName: 'Medias',
         omitNull: true
     });
     
