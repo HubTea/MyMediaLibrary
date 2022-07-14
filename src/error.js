@@ -1,3 +1,4 @@
+const sequelize = require('sequelize');
 
 
 class ErrorResponse extends Error{
@@ -89,6 +90,19 @@ class OmittedParameterError extends ErrorResponse{
 }
 
 
+class NotFoundError extends ErrorResponse{
+    constructor(underlyingError){
+        super(404, 'NOT_FOUND', underlyingError);
+    }
+}
+
+
+class FileStorageError extends ErrorResponse{
+    constructor(underlyingError){
+        super(500, 'STORAGE_ERROR', underlyingError);
+    }
+}
+
 class InternalError extends ErrorResponse{
     constructor(underlyingError){
         super(500, 'INTERNAL_ERROR', underlyingError);
@@ -103,6 +117,15 @@ class UnexpectedError extends ErrorResponse{
 }
 
 
+function wrapSequelizeError(err){
+    if(err instanceof sequelize.BaseError){
+        return new DatabaseError(err);
+    }
+    else{
+        return err;
+    }
+}
+
 module.exports = {
     ErrorResponse,
     JwtSignFailedError,
@@ -115,5 +138,9 @@ module.exports = {
     DatabaseError,
     OmittedParameterError,
     InternalError,
-    UnexpectedError
+    UnexpectedError,
+    NotFoundError,
+    FileStorageError,
+
+    wrapSequelizeError
 };
