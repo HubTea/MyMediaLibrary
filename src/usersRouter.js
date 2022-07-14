@@ -9,6 +9,7 @@ const security = require('./securityService');
 const digest = require('./digest');
 const authorizer = require('./authorizer');
 const userRepository = require('./repository/userRepository');
+const checker = require('./checker');
 
 const router = express.Router();
 
@@ -78,31 +79,16 @@ router.get('/:userId/info', async function(req, res){
 
 
 router.patch('/:userId/info', async function(req, res){
-    let userId = req.params.userId;
-    let userInfo = req.body;
-    let nickname = userInfo.nickname;
-    let introduction = userInfo.introduction;
-
-    //이 부분은 별도 미들웨어로 분리할 것
     try{
-        let token = req.get('Authorization');
-        if(!token){
-            throw new error.OmittedParameterError().appendParameter('Authorization header');
-        }
+        let userId = req.params.userId;
+        let userInfo = req.body;
+        let nickname = userInfo.nickname;
+        let introduction = userInfo.introduction;
 
-        let tokenObject = await getTokenPayload(token);
-        let auth = new authorizer.Authorizer(tokenObject.authorizer);
+        let authorizer = await checker.checkAuthorizationHeader(req);
 
-        if(!auth.testUserAccessibility(userId)){
-            throw new error.InvalidJwtError(null);
-        }
-    }
-    catch(err){
-        errorHandler.handleError(res, err);
-        return;
-    }
-    
-    try{
+        checker.checkUserAuthorization(authorizer, userId);
+
         let user = await userRepository.getUserByUserId(userId);
 
         user.nickname = nickname;
@@ -117,24 +103,6 @@ router.patch('/:userId/info', async function(req, res){
         errorHandler.handleError(res, err);
     }
 });
-
-function getTokenPayload(token){
-    return new Promise(function(resolve, reject){
-        jwt.verify(
-            token, security.key.hmac, 
-            {
-                algorithms: 'HS256'
-            }, 
-            function(err, decoded){
-                if(err){
-                    reject(err);
-                }
-
-                resolve(decoded);
-            }
-        );
-    });
-}
 
 
 router.post('/:userId/medias', function(req, res){
