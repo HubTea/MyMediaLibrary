@@ -162,7 +162,7 @@ function mediaToValueObject(media){
 }
 
 function setUpdateTime(mediaValueObject){
-    mediaValueObject.updateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    mediaValueObject.updateTime = new Date().toISOString().replace('T', ' ');
     return mediaValueObject;
 }
 
