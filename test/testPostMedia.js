@@ -1,6 +1,8 @@
 const assert = require('assert');
 
 const testUtil = require('./testUtil');
+const dbInitializer = require('./dbInitializer');
+
 
 async function testPostMedia({title, description, type}){
     let {userId, token} = await testUtil.registerUserAndLogIn({
@@ -19,9 +21,9 @@ async function testPostMedia({title, description, type}){
     let response = await request.getResponse();
 
     assert.strictEqual(response.statusCode, 201);
-    assert.ok(response.headers.Location);
+    assert.ok(response.headers.location);
 
-    console.log(response.headers.Location);
+    console.log(response.headers.location);
 }
 
 describe('/v1/users/{userId}/media 테스트', function(){

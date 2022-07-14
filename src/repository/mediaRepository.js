@@ -13,9 +13,9 @@ class NotPreparedError extends error.ErrorResponse{
 
 class MediaEntity{
     constructor(){
-        obj.id = null;
-        obj.modelInstance = null;
-        obj.model = serverConfig.model.Media;
+        this.id = null;
+        this.modelInstance = null;
+        this.model = serverConfig.model.Media;
     }
 
     static fromId(mediaId){
@@ -87,7 +87,7 @@ class MediaEntity{
         try{
             mediaSeed = setUpdateTime(mediaSeed);
             this.modelInstance = await this.model.create(mediaSeed);
-            this.id = modelInstance.mediaId;
+            this.id = this.modelInstance.mediaId;
             return mediaToValueObject(this.modelInstance);
         }
         catch(mediaCreateError){

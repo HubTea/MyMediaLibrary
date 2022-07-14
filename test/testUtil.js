@@ -229,7 +229,7 @@ function getPostMediaRequestOption(body, userId, token){
         method: 'post',
         hostname: 'localhost',
         port: serverConfig.port,
-        path: `/v1/users/${userId}/media`,
+        path: `/v1/users/${userId}/medias`,
         headers: {
             'Content-Length': body.length,
             'Content-Type': 'application/json',
