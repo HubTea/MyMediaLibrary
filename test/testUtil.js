@@ -211,6 +211,33 @@ async function registerUserAndLogIn({accountId, accountPassword, nickname}){
     };
 }
 
+function sendPostMediaRequest({userId, token, title, description, type}){
+    let body = JSON.stringify({
+        title: title,
+        description: description,
+        type: type
+    });
+    let option = getPostMediaRequestOption(body, userId, token);
+
+    let request = new Request();
+    request.send(option, body);
+    return request;
+}
+
+function getPostMediaRequestOption(body, userId, token){
+    return {
+        method: 'post',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: `/v1/users/${userId}/media`,
+        headers: {
+            'Content-Length': body.length,
+            'Content-Type': 'application/json',
+            'Authorization': token
+        }
+    };
+}
+
 module.exports = {
     Request,
 
@@ -218,6 +245,7 @@ module.exports = {
     sendLogInRequest,
     sendPatchUserMetadataRequest,
     sendGetUserMetadataRequest,
+    sendPostMediaRequest,
 
     registerUserAndLogIn
 };
