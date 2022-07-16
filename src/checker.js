@@ -4,6 +4,7 @@ const security = require('./securityService');
 const errorHandler = require('./errorHandler');
 const error = require('./error');
 const authorizer = require('./authorizer');
+const mediaRepository = require('./repository/mediaRepository');
 
 
 /**
@@ -47,7 +48,19 @@ function checkUserAuthorization(authorizer, userId){
     }
 }
 
+async function checkMediaAuthorization(authorizer, mediaId){
+    if(!authorizer.testMediaAccessibility(mediaId)){
+        throw new error.InvalidJwtError(null);
+    }
+
+    let entity = mediaRepository.MediaEntity.fromId(mediaId);
+    let media = await entity.getMetadata();
+
+    checkUserAuthorization(authorizer, media.uploader);
+}
+
 module.exports = {
     checkAuthorizationHeader,
-    checkUserAuthorization
+    checkUserAuthorization,
+    checkMediaAuthorization
 };

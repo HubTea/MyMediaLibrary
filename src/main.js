@@ -3,6 +3,7 @@ const express = require('express');
 const serverConfig = require('./serverConfig');
 const authRouter = require('./authRouter');
 const usersRouter = require('./usersRouter');
+const mediaRouter = require('./mediaRouter');
 
 
 const app = express();
@@ -29,18 +30,4 @@ app.use('/' + serverConfig.apiVersion, router);
 
 router.use('/auth', authRouter.router);
 router.use('/users', usersRouter.router);
-
-
-router.get('/medias/:mediaId', function(req, res){
-
-});
-
-
-router.get('/medias', function(req, res){
-
-});
-
-
-router.get('/medias/:mediaId/comments', function(req, res){
-    
-});
+router.use('/medias', mediaRouter.router);
