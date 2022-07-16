@@ -21,7 +21,7 @@ class MediaEntity{
     static fromId(mediaId){
         let obj = new MediaEntity();
 
-        obj.mediaId = mediaId;
+        obj.id = mediaId;
         return obj;
     }
 
@@ -36,7 +36,7 @@ class MediaEntity{
             });
 
             if(media === null){
-                throw error.NotFoundError(null);
+                throw new error.NotFoundError(null);
             }
 
             this.modelInstance = media;
@@ -117,7 +117,7 @@ class MediaEntity{
         try{
             const mediaContent = await s3Client.client.send(new s3.GetObjectCommand({
                 Bucket: s3Client.bucket,
-                Key: this.id
+                Key: `mediaContent/${this.id}`
             }));
     
             return mediaContent.Body;
@@ -131,11 +131,9 @@ class MediaEntity{
         this.assertPrepared();
 
         try{
-            await s3Client.client.send(new s3.PutObjectCommand({
-                Bucket: s3Client.bucket,
-                Key: this.id,
-                Body: content
-            }));
+            let upload = new s3Client.uploadFactory(`mediaContent/${this.id}`, content);
+
+            await upload.done();
         }   
         catch(uploadError){
             throw wrapStorageError(uploadError);
@@ -143,8 +141,8 @@ class MediaEntity{
     }
 
     assertPrepared(){
-        if(this.id){
-            throw NotPreparedError();
+        if(!this.id){
+            throw new NotPreparedError();
         }
     }
 }
