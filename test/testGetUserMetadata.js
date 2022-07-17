@@ -1,6 +1,7 @@
 const assert = require('assert');
 
 const testUtil = require('./testUtil');
+const dbInitializer = require('./dbInitializer');
 
 
 async function testGetUserMetadata({accountId, nickname, introduction}){
@@ -39,6 +40,12 @@ async function testGetUserMetadata({accountId, nickname, introduction}){
 }
 
 describe('GET /v1/users/{userId}/info 테스트', function(){
+    beforeEach(async function(){
+        await dbInitializer.initialize({
+            logging: false
+        });
+    });
+
     it(
         '응답으로 PATCH /v1/users/{userId}/info로 전달했던 값이 제대로 오는지 테스트',
         async function(){
