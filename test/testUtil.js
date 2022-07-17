@@ -282,6 +282,27 @@ function getDownloadMediaRequestOption(mediaId){
     };
 }
 
+function sendGetMediaMetadataRequest({mediaId}){
+    let body = '';
+    let option = getGetMediaMetadataRequestOption(mediaId);
+
+    let request = new Request();
+    request.send(option, body);
+    return request;
+}
+
+function getGetMediaMetadataRequestOption(mediaId){
+    return {
+        method: 'get',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: `/v1/medias/${mediaId}/info`,
+        headers: {
+
+        }
+    };
+}
+
 module.exports = {
     Request,
 
@@ -292,6 +313,7 @@ module.exports = {
     sendRegisterMediaRequest,
     sendUploadMediaRequest,
     sendDownloadMediaRequest,
+    sendGetMediaMetadataRequest,
 
     registerUserAndLogIn
 };
