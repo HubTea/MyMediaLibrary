@@ -95,20 +95,45 @@ class MediaEntity{
         }
     }
 
-    async increaseViewCount(){
-
+    async addViewCount(count){
+        await this.add({
+            viewCount: count
+        });
     }
 
-    async increaseDislikeCount(){
+    async addDislikeCount(count){
+        await this.add({
+            dislikeCount: count
+        });
+    }
 
+    async add(fields){
+        try{
+            await this.model.increment(fields, {
+                where: {
+                    mediaId: this.id
+                }
+            });
+        }
+        catch(err){
+            throw error.wrapSequelizeError(err);
+        }
     }
 
     async getViewCount(){
-
+        await this.getMetadataIfNotCached();
+        return this.modelInstance.viewCount;
     }
 
     async getDislikeCount(){
+        await this.getMetadataIfNotCached();
+        return this.modelInstance.dislikeCount;
+    }
 
+    async getMetadataIfNotCached(){
+        if(!this.modelInstance){
+            await this.getMetadata();
+        }
     }
 
     async getDownloadStream(){
@@ -117,7 +142,7 @@ class MediaEntity{
         try{
             const mediaContent = await s3Client.client.send(new s3.GetObjectCommand({
                 Bucket: s3Client.bucket,
-                Key: `mediaContent/${this.id}`
+                Key: this.getPath()
             }));
     
             return mediaContent.Body;
@@ -131,13 +156,17 @@ class MediaEntity{
         this.assertPrepared();
 
         try{
-            let upload = new s3Client.uploadFactory(`mediaContent/${this.id}`, content);
+            let upload = new s3Client.uploadFactory(this.getPath(), content);
 
             await upload.done();
         }   
         catch(uploadError){
             throw wrapStorageError(uploadError);
         }
+    }
+
+    getPath(){
+        return `mediaContent/${this.id}`;
     }
 
     assertPrepared(){
