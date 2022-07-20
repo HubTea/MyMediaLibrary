@@ -2,32 +2,98 @@ const sequelize = require('sequelize');
 
 const serverConfig = require('../serverConfig');
 const error = require('../error');
+const converter = require('./converter');
 
 
-/**
- * 
- * @param {string} userId 
- * @returns {Promise<object>} user value object
- */
-function getUserByUserId(userId){
-    return getOneUser({
-        where: {
-            userId: userId
+class UserEntity{
+    constructor(){
+        this.user = null;
+    }
+
+    /**
+     * 
+     * @param {string} uuid 
+     * @returns {Promise<object>} user value object
+     */
+    async getUserByUuid(uuid){
+        this.user = await getOneUser({
+            where: {
+                uuid: uuid
+            }
+        });
+
+        return converter.userToValueObject(this.user);
+    }
+
+    /**
+     * 
+     * @param {string} accountId 
+     * @returns {Promise<object>} user value object
+     */
+    async getUserByAccountId(accountId){
+        this.user = await getOneUser({
+            where: {
+                accountId: accountId
+            }
+        });
+
+        return converter.userToValueObject(this.user);
+    }
+
+    /**
+    * 
+    * @param {object} userSeed 
+    *  ```
+    * {
+    *  accountId: string,
+    *  nickname: string,
+    *  hash: string,
+    *  salt: string
+    * }
+    * ```
+    * @returns {Promise<object>} user value object
+    *
+    */
+    async createUser(userSeed){
+        try{
+            let user = converter.userSeedToUser(userSeed);
+
+            this.user = await serverConfig.model.User.build(user).save();
+            return converter.userToValueObject(this.user);
         }
-    });
+        catch(userCreateError){
+            throw wrapUserCreateError(userCreateError);
+        }
+    }   
+
+    async updateUser(userValueObject){
+        try{
+            let user = converter.userValueObjectToUser(userValueObject);
+            
+            if(this.user){
+                let updateResult = await this.user.update(user);
+            }
+            else{
+                let updateResult = await serverConfig.model.User.update(user, {
+                    where: {
+                        id: userValueObject.id
+                    }
+                });
+            }
+        }
+        catch(userUpdateError){
+            throw error.wrapSequelizeError(userUpdateError);
+        }
+    }
 }
 
-/**
- * 
- * @param {string} accountId 
- * @returns {Promise<object>} user value object
- */
-function getUserByAccountId(accountId){
-    return getOneUser({
-        where: {
-            accountId: accountId
-        }
-    });
+function wrapUserCreateError(userCreationError){
+    if(userCreationError instanceof sequelize.UniqueConstraintError){
+        return new error.UserAlreadyExistError(userCreationError);
+    }
+    else{
+        return error.wrapSequelizeError(userCreationError);
+    }
 }
 
 /**
@@ -43,127 +109,16 @@ async function getOneUser(queryOption){
             throw new error.UserNotExistError(null);
         }
     
-        return userToValueObject(user);
+        return user;
     }
     catch(userFindError){
         throw error.wrapSequelizeError(userFindError);
     }
 }
 
-/**
- * 
- * @param {object} userSeed 
- *  ```
- * {
- *  accountId: string,
- *  nickname: string,
- *  hash: string,
- *  salt: string
- * }
- * ```
- * @returns {Promise<object>} user value object
- *
- */
-async function createUser(userSeed){
-    try{
-        let user = userSeedToUser(userSeed);
-
-        user = await user.save();
-
-        return userToValueObject(user);
-    }
-    catch(userCreateError){
-        throw wrapUserCreateError(userCreateError);
-    }
-}
-
-function userSeedToUser(userSeed){
-    return serverConfig.model.User.build({
-        accountId: userSeed.accountId,
-        nickname: userSeed.nickname,
-        accountPasswordHash: userSeed.hash,
-        accountPasswordSalt: userSeed.salt
-    });
-}
-
-function wrapUserCreateError(userCreationError){
-    if(userCreationError instanceof sequelize.UniqueConstraintError){
-        return new error.UserAlreadyExistError(userCreationError);
-    }
-    else{
-        return error.wrapSequelizeError(userCreationError);
-    }
-}
-
-async function setUser(userValueObject){
-    try{
-        let user = userValueObjectToUser(userValueObject);
-
-        let updateResult = await serverConfig.model.User.update({
-            accountId: user.accountId,
-            nickname: user.nickname,
-            introduction: user.introduction,
-            thumbnailUrl: user.thumbnailUrl,
-            accountPasswordHash: user.accountPasswordHash,
-            accountPasswordSalt: user.accountPasswordSalt
-        }, {
-            where: {
-                userId: userValueObject.userId
-            }
-        });
-
-        return userValueObject;
-    }
-    catch(userUpdateError){
-        throw error.wrapSequelizeError(userUpdateError);
-    }
-}
-
-function userValueObjectToUser(userValueObject){
-    return serverConfig.model.User.build({
-        userId: userValueObject.userId,
-        accountId: userValueObject.accountId,
-        nickname: userValueObject.nickname,
-        introduction: userValueObject.introduction,
-        thumbnailUrl: userValueObject.thumbnailUrl,
-        accountPasswordHash: userValueObject.hash,
-        accountPasswordSalt: userValueObject.salt
-    });
-}
-
-/**
- * 
- * @param {User} user 
- * @returns {object} user value object
- * ```
- * {
- *  userId: string,
- *  accountId: string,
- *  nickname: string,
- *  introduction: string,
- *  thumbnailUrl: string,
- *  hash: string,
- *  salt: string
- * }
- * ```
- */
- function userToValueObject(user){
-    return {
-        userId: user.userId,
-        accountId: user.accountId,
-        nickname: user.nickname,
-        introduction: user.introduction,
-        thumbnailUrl: user.thumbnailUrl,
-        hash: user.accountPasswordHash,
-        salt: user.accountPasswordSalt
-    };
-}
 
 module.exports = {
-    getUserByUserId,
-    getUserByAccountId,
+    UserEntity,
 
-    createUser,
-
-    setUser
+    getOneUser
 };

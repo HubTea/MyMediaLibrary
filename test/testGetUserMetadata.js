@@ -34,7 +34,6 @@ async function testGetUserMetadata({accountId, nickname, introduction}){
 
     assert.strictEqual(body.nickname, nickname);
     assert.strictEqual(body.introduction, introduction);
-    assert.ok(typeof body.thumbnailUrl === 'string');
 
     console.log(body);
 }

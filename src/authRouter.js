@@ -16,12 +16,13 @@ const router = express.Router();
 router.post('/', async function(req, res){
     try{
         let accountId = req.body.accountId;
-        let user = await userRepository.getUserByAccountId(accountId);
+        let userEntity = new userRepository.UserEntity();
+        let user = await userEntity.getUserByAccountId(accountId);
 
         const digestGenerator = security.digestGenerator;
         const digestPair = new digest.DatabaseDigestPair(accountId, digestGenerator);
         
-        await replyAuth(req, res, digestPair, user.userId);
+        await replyAuth(req, res, digestPair, user.uuid);
     }
     catch(err){
         errorHandler.handleError(res, err);
@@ -35,9 +36,9 @@ router.post('/', async function(req, res){
  * @param {*} res 
  * @param {DigestPair} digestPair 
  * @param {DigestGenerator} digestGenerator 
- * @param {String} userId 
+ * @param {String} userUuid 
  */
-async function replyAuth(req, res, digestPair, userId){
+async function replyAuth(req, res, digestPair, userUuid){
     //인증
     if(await digestPair.isEqual(req.body.accountPassword) === false){
         throw new error.PasswordNotMatchError(null);
@@ -46,7 +47,7 @@ async function replyAuth(req, res, digestPair, userId){
     //권한 부여
     const authorizer = new auth.Authorizer({});
 
-    authorizer.setAccessibleUser(userId);
+    authorizer.setAccessibleUser(userUuid);
 
     await sendAuthorizer(res, authorizer);
 }

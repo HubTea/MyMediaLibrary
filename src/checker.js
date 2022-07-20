@@ -5,6 +5,7 @@ const errorHandler = require('./errorHandler');
 const error = require('./error');
 const authorizer = require('./authorizer');
 const mediaRepository = require('./repository/mediaRepository');
+const userRepository = require('./repository/userRepository');
 
 
 /**
@@ -42,21 +43,21 @@ function getTokenPayload(token){
     });
 }
 
-function checkUserAuthorization(authorizer, userId){
-    if(!authorizer.testUserAccessibility(userId)){
+function checkUserAuthorization(authorizer, userUuid){
+    if(!authorizer.testUserAccessibility(userUuid)){
         throw new error.InvalidJwtError(null);
     }
 }
 
-async function checkMediaAuthorization(authorizer, mediaId){
-    if(!authorizer.testMediaAccessibility(mediaId)){
+async function checkMediaAuthorization(authorizer, mediaUuid){
+    if(!authorizer.testMediaAccessibility(mediaUuid)){
         throw new error.InvalidJwtError(null);
     }
 
-    let entity = mediaRepository.MediaEntity.fromId(mediaId);
-    let media = await entity.getMetadata();
+    let mediaEntity = mediaRepository.MediaEntity.fromUuid(mediaUuid);
+    let media = await mediaEntity.getMetadataWithUploader();
 
-    checkUserAuthorization(authorizer, media.uploader);
+    checkUserAuthorization(authorizer, media.uploader.uuid);
 }
 
 module.exports = {

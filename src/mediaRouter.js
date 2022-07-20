@@ -13,19 +13,16 @@ mediaRouter.get('/', function(req, res){
 
 });
 
-mediaRouter.get('/:mediaId/info', async function(req, res){
+mediaRouter.get('/:mediaUuid/info', async function(req, res){
     try{
-        let mediaId = req.params.mediaId;
-        let mediaEntity = mediaRepository.MediaEntity.fromId(mediaId);
+        let mediaUuid = req.params.mediaUuid;
+        let mediaEntity = mediaRepository.MediaEntity.fromUuid(mediaUuid);
         
         await mediaEntity.addViewCount(1);
 
-        let mediaValueObject = await mediaEntity.getMetadata();
+        let mediaValueObject = await mediaEntity.getMetadataWithUploader();
         let viewCount = await mediaEntity.getViewCount();
         let dislikeCount = await mediaEntity.getDislikeCount();
-
-        let userId = mediaValueObject.uploader;
-        let userValueObject = await userRepository.getUserByUserId(userId);
         
         res.status(200);
         res.set('Content-Type', 'application/json');
@@ -37,8 +34,8 @@ mediaRouter.get('/:mediaId/info', async function(req, res){
             viewCount: viewCount,
             dislikeCount: dislikeCount,
             uploader: {
-                userId: userId,
-                nickname: userValueObject.nickname
+                uuid: mediaValueObject.uploader.uuid,
+                nickname: mediaValueObject.uploader.nickname
             }
         }));
         res.end();
@@ -48,10 +45,10 @@ mediaRouter.get('/:mediaId/info', async function(req, res){
     }
 });
 
-mediaRouter.get('/:mediaId', async function(req, res){
+mediaRouter.get('/:mediaUuid', async function(req, res){
     try{
-        let mediaId = req.params.mediaId;
-        let entity = mediaRepository.MediaEntity.fromId(mediaId);
+        let mediaUuid = req.params.mediaUuid;
+        let entity = mediaRepository.MediaEntity.fromUuid(mediaUuid);
         let download = await entity.getDownloadStream();
         let mediaValueObject = await entity.getMetadata();
 
@@ -63,14 +60,14 @@ mediaRouter.get('/:mediaId', async function(req, res){
     }
 });
 
-mediaRouter.post('/:mediaId', async function(req, res){
+mediaRouter.post('/:mediaUuid', async function(req, res){
     try{
-        let mediaId = req.params.mediaId;
+        let mediaUuid = req.params.mediaUuid;
         let authorizer = await checker.checkAuthorizationHeader(req);
 
-        await checker.checkMediaAuthorization(authorizer, mediaId);
+        await checker.checkMediaAuthorization(authorizer, mediaUuid);
 
-        let entity = mediaRepository.MediaEntity.fromId(mediaId);
+        let entity = mediaRepository.MediaEntity.fromUuid(mediaUuid);
 
         await entity.upload(req);
 
@@ -82,7 +79,7 @@ mediaRouter.post('/:mediaId', async function(req, res){
     }
 });
 
-mediaRouter.get('/:mediaId/comments', function(req, res){
+mediaRouter.get('/:mediaUuid/comments', function(req, res){
 
 });
 

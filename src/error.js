@@ -103,6 +103,12 @@ class FileStorageError extends ErrorResponse{
     }
 }
 
+class NotPreparedError extends ErrorResponse{
+    constructor(){
+        super(500, 'NOT_PREPARED', null);
+    }
+}
+
 class InternalError extends ErrorResponse{
     constructor(underlyingError){
         super(500, 'INTERNAL_ERROR', underlyingError);
@@ -141,6 +147,7 @@ module.exports = {
     UnexpectedError,
     NotFoundError,
     FileStorageError,
+    NotPreparedError,
 
     wrapSequelizeError
 };

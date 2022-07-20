@@ -19,11 +19,12 @@ router.post('/', async function(req, res){
             accountPw: req.body.accountPassword,
             nickname: req.body.nickname
         });
+        let userEntity = new userRepository.UserEntity();
 
-        let newUser = await userRepository.createUser(userSeed);
+        let userValueObject = await userEntity.createUser(userSeed);
 
         res.status(201);
-        res.setHeader('Location', `/v1/users/${newUser.userId}`);
+        res.setHeader('Location', `/v1/users/${userValueObject.uuid}`);
         res.end();
     }
     catch(err){
@@ -52,20 +53,20 @@ async function createUserSeed({accountId, accountPw, nickname}){
 }
 
 
-router.put('/:userId/password', function(req, res){
+router.put('/:userUuid/password', function(req, res){
 
 });
 
 
-router.get('/:userId/info', async function(req, res){
+router.get('/:userUuid/info', async function(req, res){
     try{
-        let userId = req.params.userId;
-        let user = await userRepository.getUserByUserId(userId);
+        let userUuid = req.params.userUuid;
+        let userEntity = new userRepository.UserEntity();
+        let userValueObject = await userEntity.getUserByUuid(userUuid);
 
         res.write(JSON.stringify({
-            nickname: user.nickname || '',
-            introduction: user.introduction || '',
-            thumbnailUrl: user.thumbnailUrl || ''
+            nickname: userValueObject.nickname || '',
+            introduction: userValueObject.introduction || ''
         }));
         res.end();
     }
@@ -75,23 +76,24 @@ router.get('/:userId/info', async function(req, res){
 });
 
 
-router.patch('/:userId/info', async function(req, res){
+router.patch('/:userUuid/info', async function(req, res){
     try{
-        let userId = req.params.userId;
+        let userUuid = req.params.userUuid;
         let userInfo = req.body;
         let nickname = userInfo.nickname;
         let introduction = userInfo.introduction;
 
         let authorizer = await checker.checkAuthorizationHeader(req);
 
-        checker.checkUserAuthorization(authorizer, userId);
+        checker.checkUserAuthorization(authorizer, userUuid);
 
-        let user = await userRepository.getUserByUserId(userId);
+        let userEntity = new userRepository.UserEntity();
+        let user = await userEntity.getUserByUuid(userUuid);
 
         user.nickname = nickname;
         user.introduction = introduction;
     
-        await userRepository.setUser(user);
+        await userEntity.updateUser(user);
     
         res.status(200);
         res.end();
@@ -102,27 +104,30 @@ router.patch('/:userId/info', async function(req, res){
 });
 
 
-router.post('/:userId/medias', async function(req, res){
+router.post('/:userUuid/medias', async function(req, res){
     try{
-        let userId = req.params.userId;
+        let userUuid = req.params.userUuid;
         let title = req.body.title;
         let description = req.body.description;
         let type = req.body.type;
 
         let authorizer = await checker.checkAuthorizationHeader(req);
 
-        checker.checkUserAuthorization(authorizer, userId);
+        checker.checkUserAuthorization(authorizer, userUuid);
+
+        let userEntity = new userRepository.UserEntity();
+        let userValueObject = await userEntity.getUserByUuid(userUuid);
 
         let mediaEntity = new mediaRepository.MediaEntity();
         let mediaValueObject = await mediaEntity.createMetadata({
             title: title,
             description: description,
             type: type,
-            uploader: userId
+            uploaderId: userValueObject.id
         });
 
         res.status(201);
-        res.setHeader('Location', `/v1/medias/${mediaValueObject.mediaId}`);
+        res.setHeader('Location', `/v1/medias/${mediaValueObject.uuid}`);
         res.end();
     }
     catch(err){

@@ -39,7 +39,7 @@ async function testGetMediaMetadata({title, description, type}){
     assert.strictEqual(metadata.type, type);
     assert.strictEqual(metadata.viewCount, 1);
     assert.strictEqual(metadata.dislikeCount, 0);
-    assert.strictEqual(metadata.uploader.userId, userId);
+    assert.strictEqual(metadata.uploader.uuid, userId);
     assert.strictEqual(metadata.uploader.nickname, tempNickname);
 
     let updatedMs = new Date(metadata.updateTime).getTime();

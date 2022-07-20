@@ -1,37 +1,31 @@
-const s3 = require('@aws-sdk/client-s3');
+//const s3 = require('@aws-sdk/client-s3');
+const fs = require('fs');
 
-const s3Client = require('../storageService');
+//const s3Client = require('../storageService');
 const serverConfig = require('../serverConfig');
 const error = require('../error');
+const converter = require('./converter');
 
-
-class NotPreparedError extends error.ErrorResponse{
-    constructor(){
-        super(500, 'MEDIA_ENTITY_NOT_PREPARED', null);
-    }
-}
 
 class MediaEntity{
     constructor(){
-        this.id = null;
+        this.uuid = null;
         this.modelInstance = null;
         this.model = serverConfig.model.Media;
     }
 
-    static fromId(mediaId){
+    static fromUuid(uuid){
         let obj = new MediaEntity();
 
-        obj.id = mediaId;
+        obj.uuid = uuid;
         return obj;
     }
 
-    async getMetadata(){
-        this.assertPrepared();
-
+    async getOneMedia(){
         try{
             let media = await this.model.findOne({
                 where: {
-                    mediaId: this.id
+                    uuid: this.uuid
                 }
             });
 
@@ -39,28 +33,44 @@ class MediaEntity{
                 throw new error.NotFoundError(null);
             }
 
-            this.modelInstance = media;
-            return mediaToValueObject(media);
+            return media;
         }
         catch(mediaFindError){
             throw error.wrapSequelizeError(mediaFindError);
         }
     }
 
-    async setMetadata(mediaValueObject){
+    async getMetadata(){
+        this.assertPrepared();
+        this.modelInstance = await this.getOneMedia();
+        return converter.mediaToValueObject(this.modelInstance);
+    }
+
+    async getMetadataWithUploader(){
         this.assertPrepared();
 
+        this.modelInstance = await this.getOneMedia();
+
+        let valueObject = converter.mediaToValueObject(this.modelInstance);
+        let uploader = await this.modelInstance.getUploader();
+
+        valueObject.uploader = converter.userToValueObject(uploader);
+        return valueObject;
+    }
+
+    async setMetadata(mediaValueObject){
         try{
             mediaValueObject = setUpdateTime(mediaValueObject);
-            mediaValueObject.mediaId = this.id;
+            
+            let media = converter.mediaValueObjectToMedia(mediaValueObject);
 
             if(this.modelInstance){
-                await this.modelInstance.update(mediaValueObject);
+                let updateResult = await this.modelInstance.update(media);
             }
             else{
-                let updateResult = await this.model.update(mediaValueObject, {
+                let updateResult = await this.model.update(media, {
                     where: {
-                        mediaId: this.id
+                        id: this.id
                     }
                 });
             }
@@ -78,7 +88,7 @@ class MediaEntity{
      *  title: string,
      *  description: string,
      *  type: string,
-     *  uploader: string
+     *  uploaderId: number
      * }
      * ```
      * @returns 
@@ -86,9 +96,10 @@ class MediaEntity{
     async createMetadata(mediaSeed){
         try{
             mediaSeed = setUpdateTime(mediaSeed);
+            mediaSeed = setRandom(mediaSeed);
             this.modelInstance = await this.model.create(mediaSeed);
-            this.id = this.modelInstance.mediaId;
-            return mediaToValueObject(this.modelInstance);
+            this.uuid = this.modelInstance.uuid;
+            return converter.mediaToValueObject(this.modelInstance);
         }
         catch(mediaCreateError){
             throw error.wrapSequelizeError(mediaCreateError);
@@ -111,7 +122,7 @@ class MediaEntity{
         try{
             await this.model.increment(fields, {
                 where: {
-                    mediaId: this.id
+                    uuid: this.uuid
                 }
             });
         }
@@ -135,9 +146,11 @@ class MediaEntity{
             await this.getMetadata();
         }
     }
-
+    
     async getDownloadStream(){
         this.assertPrepared();
+
+        return fs.createReadStream(`C:\\storage\\${this.getPath()}`);
 
         try{
             const mediaContent = await s3Client.client.send(new s3.GetObjectCommand({
@@ -155,6 +168,9 @@ class MediaEntity{
     async upload(content){
         this.assertPrepared();
 
+        content.pipe(fs.createWriteStream(`C:\\storage\\${this.getPath()}`));
+        return;
+
         try{
             let upload = new s3Client.uploadFactory(this.getPath(), content);
 
@@ -166,30 +182,23 @@ class MediaEntity{
     }
 
     getPath(){
-        return `mediaContent/${this.id}`;
+        return `mediaContent/${this.uuid}`;
     }
 
     assertPrepared(){
-        if(!this.id){
+        if(!this.uuid){
             throw new NotPreparedError();
         }
     }
 }
 
-function mediaToValueObject(media){
-    return {
-        mediaId: media.mediaId,
-        title: media.title,
-        description: media.description,
-        type: media.type,
-        uploader: media.uploader,
-        updateTime: media.updateTime,
-        thumbnailUrl: media.thumbnailUrl
-    };
-}
-
 function setUpdateTime(mediaValueObject){
     mediaValueObject.updateTime = new Date().toISOString().replace('T', ' ');
+    return mediaValueObject;
+}
+
+function setRandom(mediaValueObject){
+    mediaValueObject.random = Math.round(0x3fffffff * Math.random());
     return mediaValueObject;
 }
 

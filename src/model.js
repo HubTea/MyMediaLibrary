@@ -17,31 +17,45 @@ class Comment extends Model{}
 
 module.exports = function GetModels(sequelize){
     User.init({
-        userId: {
+        id: {
+            type: DataTypes.INTEGER,
+            autoIncrement: true,
+            primaryKey: true,
+        },
+
+        uuid: {
             type: DataTypes.UUID,
             defaultValue: DataTypes.UUIDV4,
-            primaryKey: true
+            allowNull: false,
+            unique: true
         },
 
         accountId: {
             type: DataTypes.STRING,
+            allowNull: false,
             unique: true,
         },
 
         accountPasswordHash: {
-            type: DataTypes.STRING
+            type: DataTypes.STRING,
+            allowNull: false
         },
 
         accountPasswordSalt: {
-            type: DataTypes.STRING
+            type: DataTypes.STRING,
+            allowNull: false
         },
 
         nickname: {
-            type: DataTypes.STRING
+            type: DataTypes.STRING,
+            defaultValue: '',
+            allowNull: false
         },
 
         introduction: {
-            type: DataTypes.STRING
+            type: DataTypes.STRING,
+            defaultValue: '',
+            allowNull: false
         }
     }, {
         sequelize,
@@ -51,47 +65,65 @@ module.exports = function GetModels(sequelize){
     });
 
     Media.init({
-        mediaId: {
-            type: DataTypes.UUID,
-            defaultValue: DataTypes.UUIDV4,
+        id: {
+            type: DataTypes.INTEGER,
+            autoIncrement: true,
             primaryKey: true
         },
 
-        uploader: {
+        uuid: {
             type: DataTypes.UUID,
             defaultValue: DataTypes.UUIDV4,
+            allowNull: false,
+            unique: true
+        },
+
+        uploaderId: {
+            type: DataTypes.INTEGER,
             references: {
                 model: User,
-                key: 'userId'
+                key: 'id'
             }
         },
 
         title: {
             type: DataTypes.STRING,
-            defaultValue: ''
+            defaultValue: '',
+            allowNull: false
         },
 
         description: {
             type: DataTypes.STRING,
-            defaultValue: ''
+            defaultValue: '',
+            allowNull: false
         },
 
-        type: DataTypes.STRING,
-        updateTime: DataTypes.DATE,
+        type: {
+            type: DataTypes.STRING,
+            defaultValue: '',
+            allowNull: false
+        },
+
+        updateTime: {
+            type: DataTypes.DATE,
+            defaultValue: '2222-02-22 22:22:22.222Z',
+            allowNull: false
+        },
 
         viewCount: {
             type: DataTypes.INTEGER,
-            defaultValue: 0
+            defaultValue: 0,
+            allowNull: false
         },
 
         dislikeCount: {
             type: DataTypes.INTEGER,
-            defaultValue: 0
+            defaultValue: 0,
+            allowNull: false
         },
 
-        order: {
+        random: {
             type: DataTypes.INTEGER,
-            autoIncrement: true,
             allowNull: false
         }
     }, {
@@ -103,19 +135,26 @@ module.exports = function GetModels(sequelize){
     
     Bookmark.init({
         userId: {
-            type: DataTypes.UUID,
-            primaryKey: true
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            references: {
+                model: User,
+                key: 'id'
+            }
         },
 
         mediaId: {
-            type: DataTypes.UUID,
-            primaryKey: true
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            references: {
+                model: Media,
+                key: 'id'
+            }
         },
 
         order: {
             type: DataTypes.INTEGER,
-            autoIncrement: true,
-            allowNull: false
+            autoIncrement: true
         }
     }, {
         sequelize,
@@ -124,20 +163,27 @@ module.exports = function GetModels(sequelize){
     });
 
     Subscribe.init({
-        uploader: {
-            type: DataTypes.UUID,
-            primaryKey: true
+        uploaderId: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            references: {
+                model: User,
+                key: 'id'
+            }
         },
 
-        subscriber: {
-            type: DataTypes.UUID,
-            primaryKey: true
+        subscriberId: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            references: {
+                model: User,
+                key: 'id'
+            }
         },
 
         order: {
             type: DataTypes.INTEGER,
-            autoIncrement: true,
-            allowNull: false
+            autoIncrement: true
         }
     }, {
         sequelize,
@@ -147,18 +193,16 @@ module.exports = function GetModels(sequelize){
 
     Tag.init({
         mediaId: {
-            type: DataTypes.UUID,
-            defaultValue: DataTypes.UUIDV4,
+            type: DataTypes.INTEGER,
             primaryKey: true,
             references: {
                 model: Media,
-                key: 'mediaId'
+                key: 'id'
             }
         },
 
         tag: {
             type: DataTypes.STRING,
-            allowNull: false,
             primaryKey: true
         }
     }, {
@@ -169,32 +213,51 @@ module.exports = function GetModels(sequelize){
     });
 
     Comment.init({
-        commentId: {
-            type: DataTypes.UUID,
-            defaultValue: DataTypes.UUIDV4,
+        id: {
+            type: DataTypes.INTEGER,
+            autoIncrement: true,
             primaryKey: true
         },
 
-        writer: {
-            type: DataTypes.UUID
-        },
-
-        media: {
-            type: DataTypes.UUID
-        },
-
-        parentCommentId: {
+        uuid: {
             type: DataTypes.UUID,
-            defaultValue: null
+            defaultValue: DataTypes.UUIDV4,
+            allowNull: false,
+            unique: true
+        },
+
+        writerId: {
+            type: DataTypes.INTEGER,
+            references: {
+                model: User,
+                key: 'id'
+            }
+        },
+
+        mediaId: {
+            type: DataTypes.INTEGER,
+            references: {
+                model: Media,
+                key: 'id'
+            }
+        },
+
+        parentId: {
+            type: DataTypes.INTEGER,
+            references: {
+                model: Comment,
+                key: 'id'
+            }
         },
 
         content: {
-            type: DataTypes.STRING
+            type: DataTypes.STRING,
+            defaultValue: '',
+            allowNull: false
         },
 
-        order: {
+        random: {
             type: DataTypes.INTEGER,
-            autoIncrement: true,
             allowNull: false
         }
     }, {
@@ -203,59 +266,68 @@ module.exports = function GetModels(sequelize){
         freezeTableName: true
     });
 
+    User.hasMany(Media, {
+        as: 'MyMedias',
+        foreignKey: 'uploaderId'
+    });
+    Media.belongsTo(User, {
+        as: 'Uploader',
+        foreignKey: 'uploaderId'
+    });
+
     User.belongsToMany(Media, {
         through: Bookmark, 
-        as: 'collection', 
+        as: 'Collections', 
         foreignKey: 'userId',
         otherKey: 'mediaId'
     });
     Media.belongsToMany(User, {
         through: Bookmark, 
-        as: 'collector', 
+        as: 'Collectors', 
         foreignKey: 'mediaId',
         otherKey: 'userId'
     });
 
     User.belongsToMany(User, {
         through: Subscribe, 
-        as: 'subscriber',
-        foreignKey: 'subscriber',
-        otherKey: 'uploader'
+        as: 'Subscribers',
+        foreignKey: 'subscriberId',
+        otherKey: 'uploaderId'
     });
 
     Comment.hasMany(Comment, {
-        as: 'childComment', 
-        foreignKey: 'parentCommentId'
+        as: 'ChildComments', 
+        foreignKey: 'parentId'
     });
     Comment.belongsTo(Comment, {
-        as: 'parentComment',
-        foreignKey: 'parentCommentId'
+        as: 'ParentComment',
+        foreignKey: 'parentId'
     });
 
     Tag.belongsTo(Media, {
-        as: 'taggedMedia',
+        as: 'TaggedMedia',
         foreignKey: 'mediaId'
     });
     Media.hasMany(Tag, {
-        as: 'mediaTag',
+        as: 'MediaTags',
         foreignKey: 'mediaId'
     });
 
     Media.hasMany(Comment, {
-        as: 'mediaComment',
+        as: 'MediaComments',
         foreignKey: 'mediaId'
     });
     Comment.belongsTo(Media, {
-        as: 'commentTarget',
+        as: 'CommentTarget',
         foreignKey: 'mediaId'
     });
 
     User.hasMany(Comment, {
-        as: 'userComment',
+        as: 'UserComments',
         foreignKey: 'writerId'
     });
     Comment.belongsTo(User, {
-        as: 'commentWriter',
+        as: 'CommentWriter',
         foreignKey: 'writerId'
     });
 
