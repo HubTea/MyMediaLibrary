@@ -148,8 +148,89 @@ router.get('/:userUuid/subscribers', function(req, res){
 });
 
 
-router.get('/:userUuid/bookmarks', function(req, res){
+/**
+ * length: 1 이상 100 이하의 정수
+ * cursor: 정수
+ */
+router.get('/:userUuid/bookmarks', async function(req, res){
+    let userUuid = req.params.userUuid;
+    let length = req.query.length;
+    let cursor = req.query.cursor;
+    let limit;
+    let order;
 
+    if(length){
+        length = parseInt(length);
+    }
+    else{
+        length = 50;
+    }
+    limit = length + 1;
+    
+    if(cursor){
+        order = parseInt(cursor);
+    }
+    else{
+        order = 0x7fffffff;
+    }
+
+    let user = await serverConfig.model.User.findOne({
+        attributes: [],
+        where: {
+            uuid: userUuid
+        },
+        include: [{
+            model: serverConfig.model.Media,
+            as: 'Collections',
+            through: {
+                attributes: ['order'],
+                where: {
+                    order: {
+                        [sequelize.Op.lte]: order
+                    }
+                }
+            },
+            include: [{
+                model: serverConfig.model.User,
+                as: 'Uploader',
+                attributes: ['uuid', 'nickname']
+            }]
+        }],
+        order: [
+            [sequelize.literal(`"Collections.Bookmark.order"`), 'DESC']
+        ]
+    });
+
+    let resBody = {
+        list: []
+    };
+
+    if(user.Collections.length === limit){
+        resBody.cursor = user.Collections[limit - 1].Bookmark.order;
+    }
+
+    let bound = Math.min(user.Collections.length, length);
+
+    for(let i = 0; i < bound; i++){
+        let collection = user.Collections[i];
+
+        resBody.list.push({
+            uuid: collection.uuid,
+            title: collection.title,
+            type: collection.type,
+            updateTime: collection.updateTime,
+            viewCount: collection.viewCount,
+            dislikeCount: collection.dislikeCount,
+            uploader: {
+                uuid: collection.Uploader.uuid,
+                nickname: collection.Uploader.nickname
+            }
+        });
+    }
+
+    res.set('Content-Type', 'application/json');
+    res.write(JSON.stringify(resBody, null, 5));
+    res.end();
 });
 
 
@@ -241,13 +322,13 @@ router.get('/:userUuid/comments', async function(req, res){
             let comment = childCommentList[i];
 
             resBody.list.push({
-                commentUuid: comment.uuid,
+                uuid: comment.uuid,
                 writer: {
-                    userUuid: comment.CommentWriter.uuid,
+                    uuid: comment.CommentWriter.uuid,
                     nickname: comment.CommentWriter.nickname
                 },
                 media: {
-                    mediaUuid: comment.CommentTarget.uuid,
+                    uuid: comment.CommentTarget.uuid,
                     title: comment.CommentTarget.title
                 },
                 content: comment.content,
