@@ -382,12 +382,6 @@ router.get('/:userUuid/comments', async function(req, res){
             list: []
         };
 
-        if(parentCommentList.length === 0){
-            res.json(resBody);
-            res.end();
-            return;
-        }
-
         if(parentCommentList[limit - 1]){
             let nextComment = parentCommentList[limit - 1];
             let utcMs = nextComment.createdAt.getTime();
