@@ -138,8 +138,55 @@ router.post('/:userUuid/medias', async function(req, res){
 });
 
 
-router.get('/:userUuid/medias', function(req, res){
+router.get('/:userUuid/medias', async function(req, res){
+    let userUuid = req.params.userUuid;
+    let length = req.query.length;
+    let cursor = req.query.cursor;
+    let limit;
+    let random;
 
+    if(length){
+        length = parseInt(length);
+        
+        if(length < 1){
+            length = 1;
+        }
+        else if(length > 100){
+            length = 100;
+        }
+    }
+    else{
+        length = 50;
+    }
+    limit = length + 1;
+
+    if(cursor){
+        random = parseInt(cursor);
+    }
+    else{
+        random = -1;
+    }
+
+    let user = await serverConfig.model.User.findOne({
+        attributes: ['id'],
+        where: {
+            uuid: userUuid
+        }
+    });
+
+    let myUploadList = await serverConfig.model.Media.findAll({
+        where: {
+            uploaderId: user.id
+        },
+        order: [
+            ['updateTime', 'DESC'],
+            ['random', 'ASC']
+        ]
+    });
+
+    let resBody = {
+        list
+    }
 });
 
 
@@ -166,40 +213,42 @@ router.get('/:userUuid/following', async function(req, res){
     }
 
     let user = await serverConfig.model.User.findOne({
-        attributes: [],
+        attributes: ['id'],
         where: {
             uuid: userUuid
+        }
+    });
+
+    let uploaderList = await serverConfig.model.Subscribe.findAll({
+        where: {
+            subscriberId: user.id,
+            order: {
+                [sequelize.Op.lte]: order
+            }
         },
         include: [{
             model: serverConfig.model.User,
-            as: 'Subscribers',
-            attributes: ['uuid', 'nickname'],
-            through: {
-                attributes: ['order'],
-                where: {
-                    order: {
-                        [sequelize.Op.lte]: order
-                    }
-                }
-            }
+            as: 'SubscribedUploader',
+            attributes: ['uuid', 'nickname']
         }],
         order: [
-            [sequelize.literal(`"Subscribers.Subscribe.order"`), 'DESC']
-        ]
+            ['order', 'DESC']
+        ],
+        limit: limit
     });
 
     let resBody = {
         list: []
     };
 
-    if(user.Subscribers.length === limit){
-        resBody.cursor = user.Subscribers[limit - 1].Subscribe.order;
+    if(uploaderList.length === limit){
+        resBody.cursor = uploaderList[limit - 1].order;
     }
 
-    let bound = Math.min(user.Subscribers.length, length);
+    let bound = Math.min(uploaderList.length, length);
 
     for(let i = 0; i < bound; i++){
-        let subscriber = user.Subscribers[i];
+        let subscriber = uploaderList[i].SubscribedUploader;
 
         resBody.list.push({
             uuid: subscriber.uuid,
@@ -239,22 +288,23 @@ router.get('/:userUuid/bookmarks', async function(req, res){
         order = 0x7fffffff;
     }
 
+
     let user = await serverConfig.model.User.findOne({
-        attributes: [],
+        attributes: ['id'],
         where: {
             uuid: userUuid
+        }
+    });
+
+    let bookmarkList = await serverConfig.model.Bookmark.findAll({
+        where: {
+            userId: user.id,
+            order: {
+                [sequelize.Op.lte]: order
+            }
         },
         include: [{
             model: serverConfig.model.Media,
-            as: 'Collections',
-            through: {
-                attributes: ['order'],
-                where: {
-                    order: {
-                        [sequelize.Op.lte]: order
-                    }
-                }
-            },
             include: [{
                 model: serverConfig.model.User,
                 as: 'Uploader',
@@ -262,22 +312,23 @@ router.get('/:userUuid/bookmarks', async function(req, res){
             }]
         }],
         order: [
-            [sequelize.literal(`"Collections.Bookmark.order"`), 'DESC']
-        ]
+            ['order', 'DESC']
+        ],
+        limit: limit
     });
 
     let resBody = {
         list: []
     };
 
-    if(user.Collections.length === limit){
-        resBody.cursor = user.Collections[limit - 1].Bookmark.order;
+    if(bookmarkList.length === limit){
+        resBody.cursor = bookmarkList[limit - 1].order;
     }
 
-    let bound = Math.min(user.Collections.length, length);
+    let bound = Math.min(bookmarkList.length, length);
 
     for(let i = 0; i < bound; i++){
-        let collection = user.Collections[i];
+        let collection = bookmarkList[i].Media;
 
         resBody.list.push({
             uuid: collection.uuid,

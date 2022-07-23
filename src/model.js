@@ -275,25 +275,54 @@ module.exports = function GetModels(sequelize){
         foreignKey: 'uploaderId'
     });
 
-    User.belongsToMany(Media, {
-        through: Bookmark, 
-        as: 'Collections', 
-        foreignKey: 'userId',
-        otherKey: 'mediaId'
+    // User.belongsToMany(Media, {
+    //     through: Bookmark, 
+    //     as: 'Collections', 
+    //     foreignKey: 'userId',
+    //     otherKey: 'mediaId'
+    // });
+    // Media.belongsToMany(User, {
+    //     through: Bookmark, 
+    //     as: 'Collectors', 
+    //     foreignKey: 'mediaId',
+    //     otherKey: 'userId'
+    // });
+    User.hasMany(Bookmark, {
+        foreignKey: 'userId'
     });
-    Media.belongsToMany(User, {
-        through: Bookmark, 
-        as: 'Collectors', 
-        foreignKey: 'mediaId',
-        otherKey: 'userId'
+    Bookmark.belongsTo(User, {
+        foreignKey: 'userId'
+    });
+    Media.hasMany(Bookmark, {
+        foreignKey: 'mediaId'
+    });
+    Bookmark.belongsTo(Media, {
+        foreignKey: 'mediaId'
     });
 
-    User.belongsToMany(User, {
-        through: Subscribe, 
-        as: 'Subscribers',
-        foreignKey: 'subscriberId',
-        otherKey: 'uploaderId'
+    // User.belongsToMany(User, {
+    //     through: Subscribe, 
+    //     as: 'Subscribers',
+    //     foreignKey: 'subscriberId',
+    //     otherKey: 'uploaderId'
+    // });
+    User.hasMany(Subscribe, {
+        as: 'UploaderSubscribers',
+        foreignKey: 'uploaderId'
     });
+    Subscribe.belongsTo(User, {
+        as: 'SubscribedUploader',
+        foreignKey: 'uploaderId'
+    });
+    User.hasMany(Subscribe, {
+        as: 'SubscriberUploaders',
+        foreignKey: 'subscriberId'
+    });
+    Subscribe.belongsTo(User, {
+        as: 'Subscriber',
+        foreignKey: 'subscriberId'
+    });
+
 
     Comment.hasMany(Comment, {
         as: 'ChildComments', 
