@@ -143,8 +143,73 @@ router.get('/:userUuid/medias', function(req, res){
 });
 
 
-router.get('/:userUuid/subscribers', function(req, res){
+router.get('/:userUuid/following', async function(req, res){
+    let userUuid = req.params.userUuid;
+    let length = req.query.length;
+    let cursor = req.query.cursor;
+    let limit;
+    let order;
 
+    if(length){
+        length = parseInt(length);
+    }
+    else{
+        length = 50;
+    }
+    limit = length + 1;
+    
+    if(cursor){
+        order = parseInt(cursor);
+    }
+    else{
+        order = 0x7fffffff;
+    }
+
+    let user = await serverConfig.model.User.findOne({
+        attributes: [],
+        where: {
+            uuid: userUuid
+        },
+        include: [{
+            model: serverConfig.model.User,
+            as: 'Subscribers',
+            attributes: ['uuid', 'nickname'],
+            through: {
+                attributes: ['order'],
+                where: {
+                    order: {
+                        [sequelize.Op.lte]: order
+                    }
+                }
+            }
+        }],
+        order: [
+            [sequelize.literal(`"Subscribers.Subscribe.order"`), 'DESC']
+        ]
+    });
+
+    let resBody = {
+        list: []
+    };
+
+    if(user.Subscribers.length === limit){
+        resBody.cursor = user.Subscribers[limit - 1].Subscribe.order;
+    }
+
+    let bound = Math.min(user.Subscribers.length, length);
+
+    for(let i = 0; i < bound; i++){
+        let subscriber = user.Subscribers[i];
+
+        resBody.list.push({
+            uuid: subscriber.uuid,
+            nickname: subscriber.nickname
+        });
+    }
+
+    res.set('Content-Type', 'application/json');
+    res.write(JSON.stringify(resBody, null, 5));
+    res.end();
 });
 
 
