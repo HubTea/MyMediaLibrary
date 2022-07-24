@@ -143,6 +143,7 @@ router.get('/:userUuid/medias', async function(req, res){
     let length = req.query.length;
     let cursor = req.query.cursor;
     let limit;
+    let date;
     let random;
 
     if(length){
@@ -161,9 +162,12 @@ router.get('/:userUuid/medias', async function(req, res){
     limit = length + 1;
 
     if(cursor){
-        random = parseInt(cursor);
+        let splittedCursor = cursor.split('_');
+        date = new Date().setTime(parseInt(splittedCursor[0]));
+        random = parseInt(splittedCursor[1]);
     }
     else{
+        date = new Date('9999-01-01T00:00:00Z');
         random = -1;
     }
 
@@ -176,7 +180,19 @@ router.get('/:userUuid/medias', async function(req, res){
 
     let myUploadList = await serverConfig.model.Media.findAll({
         where: {
-            uploaderId: user.id
+            uploaderId: user.id,
+            [sequelize.Op.or]: [{
+                updateTime: {
+                    [sequelize.Op.lt]: date
+                }
+            }, {
+                updateTime: {
+                    [sequelize.Op.eq]: date
+                },
+                random: {
+                    [sequelize.Op.gte]: random
+                }
+            }]
         },
         order: [
             ['updateTime', 'DESC'],
@@ -185,8 +201,35 @@ router.get('/:userUuid/medias', async function(req, res){
     });
 
     let resBody = {
-        list
+        list: []
+    };
+
+    if(myUploadList.length === limit){
+        let nextBegin = myUploadList[limit - 1];
+        let nextDate = nextBegin.updateTime;
+        let nextRandom = nextBegin.random;
+
+        resBody.cursor = `${nextDate}_${nextRandom}`;
     }
+
+    let bound = Math.min(myUploadList.length, length);
+
+    for(let i = 0; i < bound; i++){
+        let myUpload = myUploadList[i];
+
+        resBody.list.push({
+            uuid: myUpload.uuid,
+            title: myUpload.title,
+            type: myUpload.type,
+            updateTime: myUpload.updateTime,
+            viewCount: myUpload.viewCount,
+            dislikeCount: myUpload.dislikeCount
+        });
+    }
+
+    res.set('Content-Type', 'application/json');
+    res.write(JSON.stringify(resBody, null, 5));
+    res.end();
 });
 
 
