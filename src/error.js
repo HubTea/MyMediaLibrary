@@ -123,6 +123,20 @@ class UnexpectedError extends ErrorResponse{
 }
 
 
+class IllegalParameter extends ErrorResponse{
+    constructor(underlyingError, parameterName){
+        super(400, 'IllegalParameter', underlyingError);
+
+        this.parameterName = parameterName;
+        this.evaluateMessage();
+    }
+
+    evaluateMessage(){
+        this.message = `Parameter: ${this.parameterName}`;
+    }
+}
+
+
 function wrapSequelizeError(err){
     if(err instanceof sequelize.BaseError){
         return new DatabaseError(err);
@@ -141,6 +155,7 @@ module.exports = {
     UserAlreadyExistError,
     IllegalAccountIdError,
     IllegalAccountPasswordError,
+    IllegalParameter,
     DatabaseError,
     OmittedParameterError,
     InternalError,
