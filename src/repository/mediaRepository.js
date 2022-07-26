@@ -1,5 +1,6 @@
 //const s3 = require('@aws-sdk/client-s3');
 const fs = require('fs');
+const streamPromise = require('stream/promises');
 
 //const s3Client = require('../storageService');
 const serverConfig = require('../serverConfig');
@@ -168,7 +169,9 @@ class MediaEntity{
     async upload(content){
         this.assertPrepared();
 
-        content.pipe(fs.createWriteStream(`C:\\storage\\${this.getPath()}`));
+        await streamPromise.pipeline(
+            content, fs.createWriteStream(`C:\\storage\\${this.getPath()}`)
+        );
         return;
 
         try{
