@@ -211,6 +211,21 @@ async function registerUserAndLogIn({accountId, accountPassword, nickname}){
     };
 }
 
+async function registerMedia({userUuid, token, title, type, description}){
+    let registerMediaRequest = sendRegisterMediaRequest({
+        userId: userUuid,
+        token: token,
+        description: description,
+        type: type,
+        title: title        
+    });
+    let registerMediaResponse = await registerMediaRequest.getResponse();
+    let splittedPath = registerMediaResponse.headers.location.split('/');
+    let mediaUuid = splittedPath[splittedPath.length - 1];
+
+    return mediaUuid;
+}
+
 function sendRegisterMediaRequest({userId, token, title, description, type}){
     let body = JSON.stringify({
         title: title,
@@ -303,6 +318,37 @@ function getGetMediaMetadataRequestOption(mediaId){
     };
 }
 
+function sendGetMyUploadListRequest({userUuid, length, cursor}){
+    let option = getGetMyUploadListRequestOption({
+        userUuid: userUuid,
+        length: length,
+        cursor: cursor
+    });
+
+    let request = new Request();
+    request.send(option, '');
+    return request;
+}
+
+function getGetMyUploadListRequestOption({userUuid, length, cursor}){
+    let path = `/v1/users/${userUuid}/medias?`;
+
+    if(length){
+        path += `length=${length}&`;
+    }
+
+    if(cursor){
+        path += `cursor=${cursor}`;
+    }
+
+    return {
+        method: 'get',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: path
+    };
+}
+
 module.exports = {
     Request,
 
@@ -314,6 +360,8 @@ module.exports = {
     sendUploadMediaRequest,
     sendDownloadMediaRequest,
     sendGetMediaMetadataRequest,
+    sendGetMyUploadListRequest,
 
-    registerUserAndLogIn
+    registerUserAndLogIn,
+    registerMedia
 };
