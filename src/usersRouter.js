@@ -256,6 +256,10 @@ router.get('/:userUuid/following', async function(req, res){
     res.end();
 });
 
+router.post('/:userUuid/following', async function(req, res){
+
+});
+
 
 /**
  * length: 1 이상 100 이하의 정수
@@ -342,6 +346,10 @@ router.get('/:userUuid/bookmarks', async function(req, res){
     res.set('Content-Type', 'application/json');
     res.write(JSON.stringify(resBody, null, 5));
     res.end();
+});
+
+router.post('/:userUuid/bookmarks', async function(req, res){
+
 });
 
 
