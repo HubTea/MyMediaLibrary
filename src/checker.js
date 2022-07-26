@@ -170,6 +170,21 @@ function checkDateOrderCursor(cursor, delimiter, defaultDate, defaultOrder, para
     }
 }
 
+function checkOrderCursor(cursor, defaultOrder, parameterName){
+    if(cursor){
+        let parsed = parseInt(cursor);
+
+        if(isNaN(parsed)){
+            throw new error.IllegalParameter(null, parameterName);
+        }
+
+        return parsed;
+    }
+    else{
+        return defaultOrder;
+    }
+}
+
 
 module.exports = {
     checkAuthorizationHeader,
@@ -178,5 +193,6 @@ module.exports = {
     checkUuid,
     checkPaginationLength,
     checkDateRandomCursor,
-    checkDateOrderCursor
+    checkDateOrderCursor,
+    checkOrderCursor
 };

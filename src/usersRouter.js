@@ -8,6 +8,7 @@ const digest = require('./digest');
 const userRepository = require('./repository/userRepository');
 const mediaRepository = require('./repository/mediaRepository');
 const mediaListRepository = require('./repository/mediaListRepository');
+const followingListRepository = require('./repository/followingListRepository');
 const checker = require('./checker');
 const serverConfig = require('./serverConfig');
 const pagination = require('./pagination');
@@ -186,70 +187,29 @@ router.get('/:userUuid/medias', async function(req, res){
 
 
 router.get('/:userUuid/following', async function(req, res){
-    let userUuid = req.params.userUuid;
-    let length = req.query.length;
-    let cursor = req.query.cursor;
-    let limit;
-    let order;
-
-    if(length){
-        length = parseInt(length);
-    }
-    else{
-        length = 50;
-    }
-    limit = length + 1;
-    
-    if(cursor){
-        order = parseInt(cursor);
-    }
-    else{
-        order = 0x7fffffff;
-    }
-
-    let user = await serverConfig.model.User.findOne({
-        attributes: ['id'],
-        where: {
-            uuid: userUuid
+    let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+    let length = checker.checkPaginationLength(req.query.length, 'length');
+    let order = checker.checkOrderCursor(req.query.cursor, pagination.maximumOrder, 'cursor');
+    let paginator = new pagination.Paginator({
+        length: length,
+        mapper: function(subscribedUploader){
+            return {
+                uuid: subscribedUploader.uuid,
+                nickname: subscribedUploader.nickname
+            };
+        },
+        cursorFactory: function(subscribedUploader){
+            return subscribedUploader.order.toString();
         }
     });
+    let userEntity = new userRepository.UserEntity();
+    let userValueObject = new userEntity.getUserByUuid(userUuid);
 
-    let uploaderList = await serverConfig.model.Subscribe.findAll({
-        where: {
-            subscriberId: user.id,
-            order: {
-                [sequelize.Op.lte]: order
-            }
-        },
-        include: [{
-            model: serverConfig.model.User,
-            as: 'SubscribedUploader',
-            attributes: ['uuid', 'nickname']
-        }],
-        order: [
-            ['order', 'DESC']
-        ],
-        limit: limit
-    });
+    let uploaderList = await followingListRepository.getFollowingUserDescendingList(
+        userValueObject.id, order, paginator.getRequiredLength()
+    );
 
-    let resBody = {
-        list: []
-    };
-
-    if(uploaderList.length === limit){
-        resBody.cursor = uploaderList[limit - 1].order;
-    }
-
-    let bound = Math.min(uploaderList.length, length);
-
-    for(let i = 0; i < bound; i++){
-        let subscriber = uploaderList[i].SubscribedUploader;
-
-        resBody.list.push({
-            uuid: subscriber.uuid,
-            nickname: subscriber.nickname
-        });
-    }
+    let resBody = paginator.buildResponseBody(uploaderList);
 
     res.set('Content-Type', 'application/json');
     res.write(JSON.stringify(resBody, null, 5));
