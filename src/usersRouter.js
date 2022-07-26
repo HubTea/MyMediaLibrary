@@ -7,8 +7,10 @@ const security = require('./securityService');
 const digest = require('./digest');
 const userRepository = require('./repository/userRepository');
 const mediaRepository = require('./repository/mediaRepository');
+const mediaListRepository = require('./repository/mediaListRepository');
 const checker = require('./checker');
 const serverConfig = require('./serverConfig');
+const pagination = require('./pagination');
 
 const router = express.Router();
 
@@ -139,97 +141,47 @@ router.post('/:userUuid/medias', async function(req, res){
 
 
 router.get('/:userUuid/medias', async function(req, res){
-    let userUuid = req.params.userUuid;
-    let length = req.query.length;
-    let cursor = req.query.cursor;
-    let limit;
-    let date;
-    let random;
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let length = checker.checkPaginationLength(req.query.length, 'length');
+        let [date, random] = checker.checkDateRandomCursor(req.query.cursor, '_', pagination.endingDate, 'cursor');
 
-    if(length){
-        length = parseInt(length);
-        
-        if(length < 1){
-            length = 1;
-        }
-        else if(length > 100){
-            length = 100;
-        }
-    }
-    else{
-        length = 50;
-    }
-    limit = length + 1;
-
-    if(cursor){
-        let splittedCursor = cursor.split('_');
-        date = new Date().setTime(parseInt(splittedCursor[0]));
-        random = parseInt(splittedCursor[1]);
-    }
-    else{
-        date = new Date('9999-01-01T00:00:00Z');
-        random = -1;
-    }
-
-    let user = await serverConfig.model.User.findOne({
-        attributes: ['id'],
-        where: {
-            uuid: userUuid
-        }
-    });
-
-    let myUploadList = await serverConfig.model.Media.findAll({
-        where: {
-            uploaderId: user.id,
-            [sequelize.Op.or]: [{
-                updateTime: {
-                    [sequelize.Op.lt]: date
-                }
-            }, {
-                updateTime: {
-                    [sequelize.Op.eq]: date
-                },
-                random: {
-                    [sequelize.Op.gte]: random
-                }
-            }]
-        },
-        order: [
-            ['updateTime', 'DESC'],
-            ['random', 'ASC']
-        ]
-    });
-
-    let resBody = {
-        list: []
-    };
-
-    if(myUploadList.length === limit){
-        let nextBegin = myUploadList[limit - 1];
-        let nextDate = nextBegin.updateTime;
-        let nextRandom = nextBegin.random;
-
-        resBody.cursor = `${nextDate}_${nextRandom}`;
-    }
-
-    let bound = Math.min(myUploadList.length, length);
-
-    for(let i = 0; i < bound; i++){
-        let myUpload = myUploadList[i];
-
-        resBody.list.push({
-            uuid: myUpload.uuid,
-            title: myUpload.title,
-            type: myUpload.type,
-            updateTime: myUpload.updateTime,
-            viewCount: myUpload.viewCount,
-            dislikeCount: myUpload.dislikeCount
+        let paginator = new pagination.Paginator({
+            length: length,
+            mapper: function (myUpload){
+                return {
+                    uuid: myUpload.uuid,
+                    title: myUpload.title,
+                    type: myUpload.type,
+                    updateTime: myUpload.updateTime,
+                    viewCount: myUpload.viewCount,
+                    dislikeCount: myUpload.dislikeCount
+                };
+            },
+            cursorFactory: function(myUpload){
+                let nextTime = myUpload.updateTime.getTime();
+                let nextRandom = myUpload.random;
+    
+                return `${nextTime}_${nextRandom}`;
+            }
         });
-    }
 
-    res.set('Content-Type', 'application/json');
-    res.write(JSON.stringify(resBody, null, 5));
-    res.end();
+        let user = new userRepository.UserEntity();
+        let userValueObject = await user.getUserByUuid(userUuid);
+
+        let myUploadList = await mediaListRepository.getLatestUploadList(
+            userValueObject.id, date, random, paginator.getRequiredLength()
+        );
+
+        let resBody = paginator.buildResponseBody(myUploadList);
+    
+        res.set('Content-Type', 'application/json');
+        res.write(JSON.stringify(resBody));
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
 
@@ -578,6 +530,9 @@ router.get('/:userUuid/comments', async function(req, res){
 
 
 router.patch('/:userId/thumbnail');
+
+
+
 
 
 module.exports = {
