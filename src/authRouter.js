@@ -19,7 +19,11 @@ router.post('/', async function(req, res){
         let userEntity = new userRepository.UserEntity();
         let user = await userEntity.getUserByAccountId(accountId);
 
-        const digestGenerator = security.digestGenerator;
+        const digestGenerator = new digest.Pbkdf2DigestGenerator(
+            security.pbkdf2Option.iteration,
+            security.pbkdf2Option.hash,
+            security.digestOption.digestLength
+        );
         const digestPair = new digest.DatabaseDigestPair(accountId, digestGenerator);
         
         await replyAuth(req, res, digestPair, user.uuid);

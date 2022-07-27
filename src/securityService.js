@@ -29,6 +29,5 @@ const key = {
 module.exports = {
     pbkdf2Option: pbkdf2Option,
     digestOption: digestOption,
-    key: key,
-    digestGenerator: new digest.Pbkdf2DigestGenerator(pbkdf2Option.iteration, pbkdf2Option.hash, digestOption.digestLength)
+    key: key
 };

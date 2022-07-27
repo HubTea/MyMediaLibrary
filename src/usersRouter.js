@@ -38,7 +38,11 @@ router.post('/', async function(req, res){
 });
 
 async function createUserSeed({accountId, accountPw, nickname}){
-    let digestGenerator = security.digestGenerator;
+    let digestGenerator = new digest.Pbkdf2DigestGenerator(
+        security.pbkdf2Option.iteration,
+        security.pbkdf2Option.hash,
+        security.digestOption.digestLength
+    );
 
     let randomBytes = crypto.randomBytes(security.digestOption.saltByteLength);
     let salt = new digest.Codec();
