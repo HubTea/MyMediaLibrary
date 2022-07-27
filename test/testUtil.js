@@ -187,7 +187,7 @@ function getGetUserMetadataOption(userId){
     return requestOption;
 }
 
-async function registerUserAndLogIn({accountId, accountPassword, nickname}){
+async function registerUser({accountId, accountPassword, nickname}){
     let registerUserRequest = sendRegisterUserRequest({
         accountId: accountId,
         accountPassword: accountPassword,
@@ -198,6 +198,10 @@ async function registerUserAndLogIn({accountId, accountPassword, nickname}){
     let splittedPath = userPath.split('/');
     let userId = splittedPath[splittedPath.length - 1];
 
+    return userId;
+}
+
+async function logIn({accountId, accountPassword}){
     let logInRequest = sendLogInRequest({
         accountId: accountId,
         accountPassword: accountPassword
@@ -205,9 +209,20 @@ async function registerUserAndLogIn({accountId, accountPassword, nickname}){
     let logInBody = await logInRequest.getBodyObject();
     let token = logInBody.token;
 
+    return token;
+}
+
+async function registerUserAndLogIn({accountId, accountPassword, nickname}){
     return {
-        userId: userId,
-        token: token,
+        userId: await registerUser({
+            accountId: accountId,
+            accountPassword: accountPassword,
+            nickname: nickname
+        }),
+        token: await logIn({
+            accountId: accountId,
+            accountPassword: accountPassword
+        }),
     };
 }
 
@@ -319,18 +334,14 @@ function getGetMediaMetadataRequestOption(mediaId){
 }
 
 function sendGetMyUploadListRequest({userUuid, length, cursor}){
-    let option = getGetMyUploadListRequestOption({
-        userUuid: userUuid,
-        length: length,
-        cursor: cursor
-    });
+    let option = getGetMyUploadListRequestOption(userUuid, length, cursor);
 
     let request = new Request();
     request.send(option, '');
     return request;
 }
 
-function getGetMyUploadListRequestOption({userUuid, length, cursor}){
+function getGetMyUploadListRequestOption(userUuid, length, cursor){
     let path = `/v1/users/${userUuid}/medias?`;
 
     if(length){
@@ -349,6 +360,58 @@ function getGetMyUploadListRequestOption({userUuid, length, cursor}){
     };
 }
 
+function sendSubscribeRequest({subscriberUuid, uploaderUuid, subscriberToken}){
+    let body = JSON.stringify({
+        uploaderUuid: uploaderUuid
+    });
+    let option = getSubscribeRequestOption(body, subscriberUuid, subscriberToken);
+
+    let request = new Request();
+    request.send(option, body);
+    return request;
+}
+
+function getSubscribeRequestOption(body, subscriberUuid, subscriberToken){
+    return {
+        method: 'post',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: `/v1/users/${subscriberUuid}/following`,
+        headers: {
+            'Authorization': subscriberToken,
+            'Content-Length': body.length,
+            'Content-Type': 'application/json'
+        }
+    };
+}
+
+function sendGetFollowingListRequest({subscriberUuid, length, cursor}){
+    let option = getGetFollowingListRequestOption(subscriberUuid, length, cursor);
+
+    let request = new Request();
+    request.send(option, '');
+    return request;
+}
+
+function getGetFollowingListRequestOption(subscriberUuid, length, cursor){
+    let path = `/v1/users/${subscriberUuid}/following?`;
+
+    if(length){
+        path += `length=${length}&`;
+    }
+
+    if(cursor){
+        path += `cursor=${cursor}`;
+    }
+
+    return {
+        method: 'get',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: path,
+    };
+}
+
 module.exports = {
     Request,
 
@@ -361,7 +424,11 @@ module.exports = {
     sendDownloadMediaRequest,
     sendGetMediaMetadataRequest,
     sendGetMyUploadListRequest,
+    sendSubscribeRequest,
+    sendGetFollowingListRequest,
 
+    registerUser,
+    logIn,
     registerUserAndLogIn,
     registerMedia
 };
