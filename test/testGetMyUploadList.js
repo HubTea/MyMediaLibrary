@@ -46,9 +46,8 @@ async function testGetMyUploadList(option){
         for(let media of body.list){
             let index = mediaUuidList.indexOf(media.uuid);
 
-            if(index !== -1){
-                mediaUuidList.splice(index, 1);
-            }
+            assert.notStrictEqual(index, -1);
+            mediaUuidList.splice(index, 1);
         }
 
         if(body.cursor){
@@ -82,7 +81,7 @@ describe('GET /v1/users/{userUuid}/medias 테스트', function(){
 
         for(let i = 0; i < 123; i++){
             testCase.uploadList.push({
-                title: `video#${Math.floor(1000000 * Math.random())}`,
+                title: `video#${i}`,
                 type: 'video/mp4',
                 description: ''
             });
