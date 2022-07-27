@@ -12,7 +12,7 @@ const error = require('../error');
  */
 async function getFollowingUserDescendingList(userId, order, length){
     try{
-        await serverConfig.model.Subscribe.findAll({
+        return await serverConfig.model.Subscribe.findAll({
             where: {
                 subscriberId: userId,
                 order: {
