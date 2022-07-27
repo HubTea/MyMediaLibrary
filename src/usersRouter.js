@@ -192,18 +192,19 @@ router.get('/:userUuid/following', async function(req, res){
     let order = checker.checkOrderCursor(req.query.cursor, pagination.maximumOrder, 'cursor');
     let paginator = new pagination.Paginator({
         length: length,
-        mapper: function(subscribedUploader){
+        mapper: function(subscribeInfo){
+            let uploader = subscribeInfo.SubscribedUploader;
             return {
-                uuid: subscribedUploader.uuid,
-                nickname: subscribedUploader.nickname
+                uuid: uploader.uuid,
+                nickname: uploader.nickname
             };
         },
-        cursorFactory: function(subscribedUploader){
-            return subscribedUploader.order.toString();
+        cursorFactory: function(subscribeInfo){
+            return subscribeInfo.order.toString();
         }
     });
     let userEntity = new userRepository.UserEntity();
-    let userValueObject = new userEntity.getUserByUuid(userUuid);
+    let userValueObject = await userEntity.getUserByUuid(userUuid);
 
     let uploaderList = await followingListRepository.getFollowingUserDescendingList(
         userValueObject.id, order, paginator.getRequiredLength()
@@ -217,7 +218,43 @@ router.get('/:userUuid/following', async function(req, res){
 });
 
 router.post('/:userUuid/following', async function(req, res){
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let authorizer = await checker.checkAuthorizationHeader(req);
 
+        checker.checkUserAuthorization(authorizer, userUuid);
+
+        let uploaderUuid = checker.checkUuid(req.body.uploaderUuid, 'uploader uuid');
+        
+        let uploaderEntity = new userRepository.UserEntity();
+        let uploaderValueObjectPromise = uploaderEntity.getUserByUuid(uploaderUuid);
+
+        let subscriberEntity = new userRepository.UserEntity();
+        let subscriberValueObjectPromise = subscriberEntity.getUserByUuid(userUuid);
+
+        let uploaderValueObject = await uploaderValueObjectPromise;
+        let subscriberValueObject = await subscriberValueObjectPromise;
+
+        try{
+            await serverConfig.model.Subscribe.create({
+                uploaderId: uploaderValueObject.id,
+                subscriberId: subscriberValueObject.id
+            });
+        }
+        catch(err){
+            if(err instanceof sequelize.UniqueConstraintError){
+                //아무것도 안 함.
+            }
+            else{
+                throw error.wrapSequelizeError(err);
+            }
+        }
+        
+        res.status(200).end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
 
