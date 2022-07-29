@@ -9,6 +9,7 @@ const userRepository = require('./repository/userRepository');
 const mediaRepository = require('./repository/mediaRepository');
 const mediaListRepository = require('./repository/mediaListRepository');
 const followingListRepository = require('./repository/followingListRepository');
+const bookmarkRepository = require('./repository/bookmarkRepository');
 const checker = require('./checker');
 const serverConfig = require('./serverConfig');
 const pagination = require('./pagination');
@@ -262,95 +263,80 @@ router.post('/:userUuid/following', async function(req, res){
 });
 
 
-/**
- * length: 1 이상 100 이하의 정수
- * cursor: 정수
- */
 router.get('/:userUuid/bookmarks', async function(req, res){
-    let userUuid = req.params.userUuid;
-    let length = req.query.length;
-    let cursor = req.query.cursor;
-    let limit;
-    let order;
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let length = checker.checkPaginationLength(req.query.length, 'length');
+        let order = checker.checkOrderCursor(req.query.cursor, pagination.maximumOrder, 'order');
 
-    if(length){
-        length = parseInt(length);
-    }
-    else{
-        length = 50;
-    }
-    limit = length + 1;
-    
-    if(cursor){
-        order = parseInt(cursor);
-    }
-    else{
-        order = 0x7fffffff;
-    }
+        let paginator = new pagination.Paginator({
+            length: length,
+            mapper: function(bookmarkInstance){
+                let collection = bookmarkInstance.Media;
 
-
-    let user = await serverConfig.model.User.findOne({
-        attributes: ['id'],
-        where: {
-            uuid: userUuid
-        }
-    });
-
-    let bookmarkList = await serverConfig.model.Bookmark.findAll({
-        where: {
-            userId: user.id,
-            order: {
-                [sequelize.Op.lte]: order
-            }
-        },
-        include: [{
-            model: serverConfig.model.Media,
-            include: [{
-                model: serverConfig.model.User,
-                as: 'Uploader',
-                attributes: ['uuid', 'nickname']
-            }]
-        }],
-        order: [
-            ['order', 'DESC']
-        ],
-        limit: limit
-    });
-
-    let resBody = {
-        list: []
-    };
-
-    if(bookmarkList.length === limit){
-        resBody.cursor = bookmarkList[limit - 1].order;
-    }
-
-    let bound = Math.min(bookmarkList.length, length);
-
-    for(let i = 0; i < bound; i++){
-        let collection = bookmarkList[i].Media;
-
-        resBody.list.push({
-            uuid: collection.uuid,
-            title: collection.title,
-            type: collection.type,
-            updateTime: collection.updateTime,
-            viewCount: collection.viewCount,
-            dislikeCount: collection.dislikeCount,
-            uploader: {
-                uuid: collection.Uploader.uuid,
-                nickname: collection.Uploader.nickname
+                return {
+                    uuid: collection.uuid,
+                    title: collection.title,
+                    type: collection.type,
+                    updateTime: collection.updateTime,
+                    viewCount: collection.viewCount,
+                    dislikeCount: collection.dislikeCount,
+                    uploader: {
+                        uuid: collection.Uploader.uuid,
+                        nickname: collection.Uploader.nickname
+                    }
+                };
+            },
+            cursorFactory: function(bookmarkInstance){
+                return bookmarkInstance.order.toString();
             }
         });
-    }
 
-    res.set('Content-Type', 'application/json');
-    res.write(JSON.stringify(resBody, null, 5));
-    res.end();
+        let userEntity = new userRepository.UserEntity();
+        let userValueObject = await userEntity.getUserByUuid(userUuid);
+
+        let bookmarkList = await bookmarkRepository.getBookmarkList(
+            userValueObject.id, order, paginator.getRequiredLength()
+        );
+
+        let resBody = paginator.buildResponseBody(bookmarkList);
+
+        res.json(resBody);
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
 router.post('/:userUuid/bookmarks', async function(req, res){
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let mediaUuid = checker.checkUuid(req.body.mediaUuid, 'media uuid');
+    
+        let authorizer = await checker.checkAuthorizationHeader(req);
+    
+        checker.checkUserAuthorization(authorizer, userUuid);
+    
+        let userEntity = new userRepository.UserEntity();
+        let mediaEntity = mediaRepository.MediaEntity.fromUuid(mediaUuid);
 
+        let userValueObjectPromise = userEntity.getUserByUuid(userUuid);
+        let mediaValueObjectPromise = mediaEntity.getMetadata();
+
+        let userValueObject = await userValueObjectPromise;
+        let mediaValueObject = await mediaValueObjectPromise;
+
+        await bookmarkRepository.createBookmark({
+            userId: userValueObject.id,
+            mediaId: mediaValueObject.id
+        });
+
+        res.status(200).end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
 

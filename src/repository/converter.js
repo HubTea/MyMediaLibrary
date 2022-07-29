@@ -61,10 +61,31 @@ function userToValueObject(user){
     };
 }
 
+/**
+ * 
+ * @param {object} valueObject 
+ * ```
+ * {
+ *  userId: number,
+ *  mediaId: number
+ * }
+ * ```
+ * @returns 
+ */
+function bookmarkFromValueObject(valueObject){
+    return {
+        userId: valueObject.userId,
+        mediaId: valueObject.mediaId
+    };
+}
+
 module.exports = {
     userToValueObject,
     userValueObjectToUser,
     userSeedToUser,
+
     mediaToValueObject,
-    mediaValueObjectToMedia
+    mediaValueObjectToMedia,
+
+    bookmarkFromValueObject
 };
