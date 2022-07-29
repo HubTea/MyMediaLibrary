@@ -6,6 +6,7 @@ const dbInitializer = require('./dbInitializer');
 
 class GetMyUploadListRequestFactory extends testUtil.RequestFactory{
     constructor(uploaderUuid){
+        super();
         this.uploaderUuid = uploaderUuid;
     }
 
