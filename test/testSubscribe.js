@@ -60,11 +60,8 @@ async function testSubscribe(option){
     }
 
     let factory = new GetFollowingListRequestFactory(subscriber.userId);
-    let assembler = new testUtil.PageAssembler(factory);
     
-    let fullList = await assembler.assemble();
-    
-    testUtil.assertPage(uploaderUuidList, fullList);
+    await testUtil.assertEqualPage(uploaderUuidList, factory);
 }
 
 describe('/v1/users/{userUuid}/following 테스트', function(){
@@ -84,7 +81,7 @@ describe('/v1/users/{userUuid}/following 테스트', function(){
             uploaderList: []
         };
 
-        for(let i = 0; i < 123; i++){
+        for(let i = 0; i < 60; i++){
             testCase.uploaderList.push({
                 accountId: `uploader#${i}`,
                 accountPassword: 'password',

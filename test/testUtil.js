@@ -471,9 +471,12 @@ class RequestFactory{
     }
 }
 
-function assertPage(uuidList, assembledPage){
+async function assertEqualPage(uuidList,  requestFactory){
+    let assembler = new PageAssembler(requestFactory);
     let uuidListClone = JSON.parse(JSON.stringify(uuidList));
-    
+
+    let assembledPage = await assembler.assemble();
+
     assert(assembledPage.length, uuidListClone.length);
     for(let element of assembledPage){
         let index = uuidListClone.indexOf(element.uuid);
@@ -488,7 +491,7 @@ module.exports = {
     Request,
     PageAssembler,
     RequestFactory,
-    assertPage,
+    assertEqualPage,
 
     sendRegisterUserRequest,
     sendLogInRequest,

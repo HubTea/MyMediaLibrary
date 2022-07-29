@@ -40,13 +40,9 @@ async function testGetMyUploadList(option){
     }
 
     let mediaUuidList = await Promise.all(mediaUuidPromiseList);
-
     let factory = new GetMyUploadListRequestFactory(userUuid);
-    let assembler = new testUtil.PageAssembler(factory);
 
-    let fullList = await assembler.assemble();
-    
-    testUtil.assertPage(mediaUuidList, fullList);
+    await testUtil.assertEqualPage(mediaUuidList, factory);
 }
 
 describe('GET /v1/users/{userUuid}/medias 테스트', function(){
@@ -66,7 +62,7 @@ describe('GET /v1/users/{userUuid}/medias 테스트', function(){
             uploadList: []
         };
 
-        for(let i = 0; i < 123; i++){
+        for(let i = 0; i < 60; i++){
             testCase.uploadList.push({
                 title: `video#${i}`,
                 type: 'video/mp4',
