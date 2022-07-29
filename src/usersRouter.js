@@ -240,20 +240,7 @@ router.post('/:userUuid/following', async function(req, res){
         let uploaderValueObject = await uploaderValueObjectPromise;
         let subscriberValueObject = await subscriberValueObjectPromise;
 
-        try{
-            await serverConfig.model.Subscribe.create({
-                uploaderId: uploaderValueObject.id,
-                subscriberId: subscriberValueObject.id
-            });
-        }
-        catch(err){
-            if(err instanceof sequelize.UniqueConstraintError){
-                //아무것도 안 함.
-            }
-            else{
-                throw error.wrapSequelizeError(err);
-            }
-        }
+        await followingListRepository.createFollowing(uploaderValueObject.id, subscriberValueObject.id);
         
         res.status(200).end();
     }

@@ -35,6 +35,24 @@ async function getFollowingUserDescendingList(userId, order, length){
     }
 }
 
+async function createFollowing(userId, subscriberId){
+    try{
+        await serverConfig.model.Subscribe.create({
+            uploaderId: userId,
+            subscriberId: subscriberId
+        });
+    }
+    catch(err){
+        if(err instanceof sequelize.UniqueConstraintError){
+            //아무것도 안 함.
+        }
+        else{
+            throw error.wrapSequelizeError(err);
+        }
+    }
+}
+
 module.exports = {
-    getFollowingUserDescendingList
+    getFollowingUserDescendingList,
+    createFollowing
 };
