@@ -360,7 +360,57 @@ function getGetFollowingListRequestOption(subscriberUuid, length, cursor){
     };
 }
 
+function sendGetBookmarkRequest({userUuid, length, cursor}){
+    let option = getGetBookmarkRequestOption(userUuid, length, cursor);
+    let request = new Request();
 
+    request.send(option, '');
+    return request;
+}
+
+function getGetBookmarkRequestOption(userUuid, length, cursor){
+    let path = `/v1/users/${userUuid}/bookmarks?`;
+
+    if(length){
+        path += `length=${length}&`;
+    }
+
+    if(cursor){
+        path += `cursor=${cursor}`;
+    }
+
+    return {
+        method: 'get',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: path
+    };
+}
+
+function sendAppendBookmarkRequest({userUuid, token, mediaUuid}){
+    let body = JSON.stringify({
+        mediaUuid: mediaUuid
+    });
+    let option = getAppendBookmarkRequestOption(body, userUuid, token);
+    let request = new Request();
+
+    request.send(option, body);
+    return request;
+}
+
+function getAppendBookmarkRequestOption(body, userUuid, token){
+    return {
+        method: 'post',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: `/v1/users/${userUuid}/bookmarks`,
+        headers: {
+            'Authorization': token,
+            'Content-Type': 'application/json',
+            'Content-Length': body.length
+        }
+    };
+}
 
 
 async function registerUser({accountId, accountPassword, nickname}){
@@ -477,7 +527,7 @@ async function assertEqualPage(uuidList,  requestFactory){
 
     let assembledPage = await assembler.assemble();
 
-    assert(assembledPage.length, uuidListClone.length);
+    assert.strictEqual(assembledPage.length, uuidListClone.length);
     for(let element of assembledPage){
         let index = uuidListClone.indexOf(element.uuid);
 
@@ -504,6 +554,8 @@ module.exports = {
     sendGetMyUploadListRequest,
     sendSubscribeRequest,
     sendGetFollowingListRequest,
+    sendGetBookmarkRequest,
+    sendAppendBookmarkRequest,
 
     registerUser,
     logIn,
