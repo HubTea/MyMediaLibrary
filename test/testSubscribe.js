@@ -4,6 +4,21 @@ const testUtil = require('./testUtil');
 const dbInitializer = require('./dbInitializer');
 
 
+class GetFollowingListRequestFactory extends testUtil.RequestFactory{
+    constructor(subscriberUuid){
+        super();
+        this.subscriberUuid = subscriberUuid;
+    }
+
+    create(cursor){
+        return testUtil.sendGetFollowingListRequest({
+            subscriberUuid: this.subscriberUuid,
+            cursor: cursor
+        });
+    }
+}
+
+
 async function testSubscribe(option){
     let subscriberPromise = testUtil.registerUserAndLogIn({
         accountId: option.subscriber.accountId,
@@ -43,38 +58,13 @@ async function testSubscribe(option){
 
         assert.strictEqual(subscribeResponse.statusCode, 200);
     }
+
+    let factory = new GetFollowingListRequestFactory(subscriber.userId);
+    let assembler = new testUtil.PageAssembler(factory);
     
-    let cursor;
-    let fullList = [];
-
-    while(true){
-        let followingListRequest = testUtil.sendGetFollowingListRequest({
-            subscriberUuid: subscriber.userId,
-            cursor: cursor
-        });
-        let followingListResponse = await followingListRequest.getResponse();
-        let followingListBody = await followingListRequest.getBodyObject();
-        let followingList = followingListBody.list;
-
-        assert.strictEqual(followingListResponse.statusCode, 200);
-        
-        fullList = fullList.concat(followingList);
-
-        if(followingListBody.cursor){
-            cursor = followingListBody.cursor;
-        }   
-        else{
-            break;
-        }
-    }
+    let fullList = await assembler.assemble();
     
-    for(let uploader of fullList){
-        let index = uploaderUuidList.indexOf(uploader.uuid);
-
-        assert.notStrictEqual(index, -1);
-        uploaderUuidList.splice(index, 1);
-    }
-    assert.strictEqual(uploaderUuidList.length, 0);
+    testUtil.assertPage(uploaderUuidList, fullList);
 }
 
 describe('/v1/users/{userUuid}/following 테스트', function(){

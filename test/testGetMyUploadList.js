@@ -4,6 +4,18 @@ const testUtil = require('./testUtil');
 const dbInitializer = require('./dbInitializer');
 
 
+class GetMyUploadListRequestFactory extends testUtil.RequestFactory{
+    constructor(uploaderUuid){
+        this.uploaderUuid = uploaderUuid;
+    }
+
+    create(cursor){
+        return testUtil.sendGetMyUploadListRequest({
+            userUuid: this.uploaderUuid,
+            cursor: cursor
+        });
+    }
+}
 
 async function testGetMyUploadList(option){
     let {userId: userUuid, token} = await testUtil.registerUserAndLogIn({
@@ -27,39 +39,13 @@ async function testGetMyUploadList(option){
     }
 
     let mediaUuidList = await Promise.all(mediaUuidPromiseList);
-    let totalLength = 0;
-    let cursor;
 
-    while(true){
-        let request = testUtil.sendGetMyUploadListRequest({
-            userUuid: userUuid,
-            cursor: cursor
-        });
-        let response = await request.getResponse();
-        let body = await request.getBodyObject();
+    let factory = new GetMyUploadListRequestFactory(userUuid);
+    let assembler = new testUtil.PageAssembler(factory);
+
+    let fullList = await assembler.assemble();
     
-        assert.strictEqual(response.statusCode, 200);
-        assert.ok(body);
-        assert.ok(body.list);
-        totalLength += body.list.length;
-
-        for(let media of body.list){
-            let index = mediaUuidList.indexOf(media.uuid);
-
-            assert.notStrictEqual(index, -1);
-            mediaUuidList.splice(index, 1);
-        }
-
-        if(body.cursor){
-            cursor = body.cursor;
-        }
-        else{
-            break;
-        }
-    }
-    assert.strictEqual(totalLength, option.uploadList.length);
-    
-    assert.ok(!mediaUuidList.length);
+    testUtil.assertPage(mediaUuidList, fullList);
 }
 
 describe('GET /v1/users/{userUuid}/medias 테스트', function(){

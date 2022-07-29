@@ -1,4 +1,6 @@
 const http = require('http');
+const assert = require('assert');
+
 const serverConfig = require('../src/serverConfig');
 
 
@@ -187,60 +189,6 @@ function getGetUserMetadataOption(userId){
     return requestOption;
 }
 
-async function registerUser({accountId, accountPassword, nickname}){
-    let registerUserRequest = sendRegisterUserRequest({
-        accountId: accountId,
-        accountPassword: accountPassword,
-        nickname: nickname
-    });
-    let registerUserResponse = await registerUserRequest.getResponse();
-    let userPath = registerUserResponse.headers.location;
-    let splittedPath = userPath.split('/');
-    let userId = splittedPath[splittedPath.length - 1];
-
-    return userId;
-}
-
-async function logIn({accountId, accountPassword}){
-    let logInRequest = sendLogInRequest({
-        accountId: accountId,
-        accountPassword: accountPassword
-    });
-    let logInBody = await logInRequest.getBodyObject();
-    let token = logInBody.token;
-
-    return token;
-}
-
-async function registerUserAndLogIn({accountId, accountPassword, nickname}){
-    return {
-        userId: await registerUser({
-            accountId: accountId,
-            accountPassword: accountPassword,
-            nickname: nickname
-        }),
-        token: await logIn({
-            accountId: accountId,
-            accountPassword: accountPassword
-        }),
-    };
-}
-
-async function registerMedia({userUuid, token, title, type, description}){
-    let registerMediaRequest = sendRegisterMediaRequest({
-        userId: userUuid,
-        token: token,
-        description: description,
-        type: type,
-        title: title        
-    });
-    let registerMediaResponse = await registerMediaRequest.getResponse();
-    let splittedPath = registerMediaResponse.headers.location.split('/');
-    let mediaUuid = splittedPath[splittedPath.length - 1];
-
-    return mediaUuid;
-}
-
 function sendRegisterMediaRequest({userId, token, title, description, type}){
     let body = JSON.stringify({
         title: title,
@@ -412,8 +360,135 @@ function getGetFollowingListRequestOption(subscriberUuid, length, cursor){
     };
 }
 
+
+
+
+async function registerUser({accountId, accountPassword, nickname}){
+    let registerUserRequest = sendRegisterUserRequest({
+        accountId: accountId,
+        accountPassword: accountPassword,
+        nickname: nickname
+    });
+    let registerUserResponse = await registerUserRequest.getResponse();
+    let userPath = registerUserResponse.headers.location;
+    let splittedPath = userPath.split('/');
+    let userId = splittedPath[splittedPath.length - 1];
+
+    return userId;
+}
+
+async function logIn({accountId, accountPassword}){
+    let logInRequest = sendLogInRequest({
+        accountId: accountId,
+        accountPassword: accountPassword
+    });
+    let logInBody = await logInRequest.getBodyObject();
+    let token = logInBody.token;
+
+    return token;
+}
+
+async function registerUserAndLogIn({accountId, accountPassword, nickname}){
+    return {
+        userId: await registerUser({
+            accountId: accountId,
+            accountPassword: accountPassword,
+            nickname: nickname
+        }),
+        token: await logIn({
+            accountId: accountId,
+            accountPassword: accountPassword
+        }),
+    };
+}
+
+async function registerMedia({userUuid, token, title, type, description}){
+    let registerMediaRequest = sendRegisterMediaRequest({
+        userId: userUuid,
+        token: token,
+        description: description,
+        type: type,
+        title: title        
+    });
+    let registerMediaResponse = await registerMediaRequest.getResponse();
+    let splittedPath = registerMediaResponse.headers.location.split('/');
+    let mediaUuid = splittedPath[splittedPath.length - 1];
+
+    return mediaUuid;
+}
+
+
+
+
+class PageAssembler{
+    /**
+     * 
+     * @param {RequestFactory} requestFactory 
+     */
+    constructor(requestFactory){
+        this.requestFactory = requestFactory;
+    }
+
+    async assemble(){
+        let list = [];
+        let cursor;
+    
+        while(true){
+            let request = this.requestFactory.create(cursor);
+            let response = await request.getResponse();
+            let body = await request.getBodyObject();
+    
+            assert.strictEqual(response.statusCode, 200);
+            assert.ok(body);
+            assert.ok(body.list);
+    
+            list = list.concat(body.list);
+    
+            if(body.cursor){
+                cursor = body.cursor;
+            }
+            else{
+                break;
+            }
+        }
+    
+        return list;
+    }
+}
+
+class RequestFactory{
+    constructor(){
+
+    }
+
+    /**
+     * 
+     * @param {string | undefined} cursor 
+     * @return {Request}
+     */
+    create(cursor){
+
+    }
+}
+
+function assertPage(uuidList, assembledPage){
+    let uuidListClone = JSON.parse(JSON.stringify(uuidList));
+    
+    assert(assembledPage.length, uuidListClone.length);
+    for(let element of assembledPage){
+        let index = uuidListClone.indexOf(element.uuid);
+
+        assert.notStrictEqual(index, -1);
+        uuidListClone.splice(index, 1);
+    }
+    assert.strictEqual(uuidListClone.length, 0);
+}
+
 module.exports = {
     Request,
+    PageAssembler,
+    RequestFactory,
+    assertPage,
 
     sendRegisterUserRequest,
     sendLogInRequest,
