@@ -1,5 +1,5 @@
 //const s3 = require('@aws-sdk/client-s3');
-const fs = require('fs');
+const fsPromise = require('fs/promises');
 const streamPromise = require('stream/promises');
 
 //const s3Client = require('../storageService');
@@ -151,7 +151,8 @@ class MediaEntity{
     async getDownloadStream(){
         this.assertPrepared();
 
-        return fs.createReadStream(`C:\\storage\\${this.getPath()}`);
+        let file = await fsPromise.open(`C:\\storage\\${this.getPath()}`);
+        return file.createReadStream();
 
         try{
             const mediaContent = await s3Client.client.send(new s3.GetObjectCommand({
@@ -169,8 +170,9 @@ class MediaEntity{
     async upload(content){
         this.assertPrepared();
 
+        let file = await fsPromise.open(`C:\\storage\\${this.getPath()}`, 'w');
         await streamPromise.pipeline(
-            content, fs.createWriteStream(`C:\\storage\\${this.getPath()}`)
+            content, file.createWriteStream()
         );
         return;
 
