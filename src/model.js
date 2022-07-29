@@ -131,6 +131,14 @@ module.exports = function GetModels(sequelize){
         omitNull: true,
         paranoid: true,
         freezeTableName: true,
+
+        //영어 문법적으로는 오류지만
+        //프로젝트 처음부터 사용한 단어라
+        //계속 사용하기로 함.
+        name: {
+            singular: 'Media',
+            plural: 'Medias'
+        }
     });
     
     Bookmark.init({
