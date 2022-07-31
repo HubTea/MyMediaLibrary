@@ -186,6 +186,10 @@ function checkOrderCursor(cursor, defaultOrder, parameterName){
 }
 
 function checkPlaintext(text, parameterName){
+    if(typeof text !== 'string'){
+        throw new error.IllegalParameter(null, parameterName);
+    }
+
     let endCharacterList = ['a', 'z', 'A', 'Z', '0', '9', ' '];
     let [a, z, A, Z, zero, nine, space] = endCharacterList.map(x => x.charCodeAt(0));
     let allowed = {};
@@ -213,7 +217,15 @@ function checkPlaintext(text, parameterName){
     return text;
 }
 
+function checkMimeType(type, parameterName){
+    let allowed = ['image/png', 'image/jpeg', 'video/mp4'];
 
+    if(allowed.indexOf(type) === -1){
+        throw new error.IllegalParameter(null, parameterName);
+    }
+
+    return type;
+}
 
 module.exports = {
     checkAuthorizationHeader,
@@ -224,5 +236,6 @@ module.exports = {
     checkDateRandomCursor,
     checkDateOrderCursor,
     checkOrderCursor,
-    checkPlaintext
+    checkPlaintext,
+    checkMimeType
 };

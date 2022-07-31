@@ -117,10 +117,10 @@ router.patch('/:userUuid/info', async function(req, res){
 
 router.post('/:userUuid/medias', async function(req, res){
     try{
-        let userUuid = req.params.userUuid;
-        let title = req.body.title;
-        let description = req.body.description;
-        let type = req.body.type;
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let title = checker.checkPlaintext(req.body.title, 'title');
+        let description = checker.checkPlaintext(req.body.description, 'description');
+        let type = checker.checkMimeType(req.body.type, 'type');
 
         let authorizer = await checker.checkAuthorizationHeader(req);
 
