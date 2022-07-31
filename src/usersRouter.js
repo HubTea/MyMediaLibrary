@@ -10,6 +10,7 @@ const mediaRepository = require('./repository/mediaRepository');
 const mediaListRepository = require('./repository/mediaListRepository');
 const followingListRepository = require('./repository/followingListRepository');
 const bookmarkRepository = require('./repository/bookmarkRepository');
+const commentRepository = require('./repository/commentRepository');
 const checker = require('./checker');
 const serverConfig = require('./serverConfig');
 const pagination = require('./pagination');
@@ -333,88 +334,16 @@ router.post('/:userUuid/bookmarks', async function(req, res){
  * parentUuid: uuid
  */
 router.get('/:userUuid/comments', async function(req, res){
-    let userUuid = req.params.userUuid;
-    let length = req.query.length;
-    let cursor = req.query.cursor;
+    let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+    let length = checker.checkPaginationLength(req.query.length, 'length');
+    let [date, random] = checker.checkDateRandomCursor(req.query.cursor, '_', pagination.beginningDate, 'cursor');
     let parentUuid = req.query.parentUuid;
+    let commentList;
 
-    let date;
-    let random;
-    let limit;
-    if(cursor){
-        let stringCursor = cursor.split('_');
-        date = new Date().setTime(parseInt(stringCursor[0]));
-        random = parseInt(stringCursor[1]);
-    }
-
-    date = date || new Date('2000-01-01T00:00Z');
-    random = random || -1;
-    limit = parseInt(length || 50) + 1;
-    if(parentUuid){
-        let parentComment = await serverConfig.model.Comment.findOne({
-            attributes: ['id'],
-            where: {
-                uuid: parentUuid
-            }
-        });
-        let childCommentList = await serverConfig.model.Comment.findAll({
-            attributes: ['uuid', 'content', 'createdAt', 'updatedAt', 'random'],
-            where: {
-                parentId: parentComment.id,
-                [sequelize.Op.or]: [{
-                    createdAt: {
-                        [sequelize.Op.gt]: date
-                    }
-                }, {
-                    [sequelize.Op.and]: [{
-                        createdAt: date
-                    }, {
-                        random: {
-                            [sequelize.Op.gte]: random
-                        }
-                    }]
-                }]
-            },
-            include: [{
-                model: serverConfig.model.Media,
-                as: 'CommentTarget',
-                attributes: ['uuid', 'title']
-            }, {
-                model: serverConfig.model.User,
-                as: 'CommentWriter',
-                attributes: ['uuid', 'nickname']
-            }],
-            order: [
-                ['createdAt', 'ASC'],
-                ['random', 'ASC']
-            ],
-            limit: limit
-        });
-        
-        let resBody = {
-            list: []
-        };
-
-        if(childCommentList.length === 0){
-            res.json(resBody);
-            res.end();
-            return;
-        }
-
-        if(childCommentList[limit - 1]){
-            let nextComment = childCommentList[limit - 1];
-            let utcMs = nextComment.createdAt.getTime();
-            let random = nextComment.random;
-
-            resBody.nextCursor = `${utcMs}_${random}`;
-        }
-
-        let bound = Math.min(childCommentList.length, limit - 1);
-
-        for(let i = 0; i < bound; i++){
-            let comment = childCommentList[i];
-
-            resBody.list.push({
+    let paginator = new pagination.Paginator({
+        length: length,
+        mapper: function(comment){
+            return {
                 uuid: comment.uuid,
                 writer: {
                     uuid: comment.CommentWriter.uuid,
@@ -427,87 +356,39 @@ router.get('/:userUuid/comments', async function(req, res){
                 content: comment.content,
                 createdAt: comment.createdAt.toISOString(),
                 updatedAt: comment.updatedAt.toISOString()
-            });
+            };
+        },
+        cursorFactory: function(comment){
+            let utcMs = comment.createdAt.getTime();
+            let random = comment.random;
+
+            return `${utcMs}_${random}`;
         }
-        res.set('Content-Type', 'application/json');
-        res.write(JSON.stringify(resBody, null, 5));
-        res.end();
+    });
+    let requiredLength = paginator.getRequiredLength();
+
+    if(parentUuid){
+        checker.checkUuid(parentUuid, 'parent uuid');
+
+        let parentComment = await commentRepository.getCommentByUuid(parentUuid);
+
+        commentList = await commentRepository.getChildCommentListWithMediaReference(
+            date, random, requiredLength, parentComment.id
+        );
     }
     else{
         let userEntity = new userRepository.UserEntity();
         let userValueObject = await userEntity.getUserByUuid(userUuid);
 
-        let parentCommentList = await serverConfig.model.Comment.findAll({
-            attributes: ['uuid', 'content', 'createdAt', 'updatedAt', 'random'],
-            where: {
-                writerId: userValueObject.id,
-                [sequelize.Op.or]: [{
-                    createdAt: {
-                        [sequelize.Op.gt]: date
-                    }
-                }, {
-                    [sequelize.Op.and]: [{
-                        createdAt: date
-                    }, {
-                        random: {
-                            [sequelize.Op.gte]: random
-                        }
-                    }]
-                }]
-            },
-            include: [{
-                model: serverConfig.model.Media,
-                as: 'CommentTarget',
-                attributes: ['uuid', 'title']
-            }, {
-                model: serverConfig.model.User,
-                as: 'CommentWriter',
-                attributes: ['uuid', 'nickname']
-            }],
-            order: [
-                ['createdAt', 'ASC'],
-                ['random', 'ASC']
-            ],
-            limit: limit
-        });
-        
-        let resBody = {
-            list: []
-        };
-
-        if(parentCommentList[limit - 1]){
-            let nextComment = parentCommentList[limit - 1];
-            let utcMs = nextComment.createdAt.getTime();
-            let random = nextComment.random;
-
-            resBody.nextCursor = `${utcMs}_${random}`;
-        }
-
-        let bound = Math.min(parentCommentList.length, limit - 1);
-
-        for(let i = 0; i < bound; i++){
-            let comment = parentCommentList[i];
-
-            resBody.list.push({
-                commentUuid: comment.uuid,
-                writer: {
-                    userUuid: comment.CommentWriter.uuid,
-                    nickname: comment.CommentWriter.nickname
-                },
-                media: {
-                    mediaUuid: comment.CommentTarget.uuid,
-                    title: comment.CommentTarget.title
-                },
-                content: comment.content,
-                createdAt: comment.createdAt.toISOString(),
-                updatedAt: comment.updatedAt.toISOString()
-            });
-        }
-        res.set('Content-Type', 'application/json');
-        res.write(JSON.stringify(resBody, null, 5));
-        res.end();
+        commentList = await commentRepository.getMyCommentListWithMediaReference(
+            date, random, requiredLength, userValueObject.id
+        );
     }
     
+    let resBody = paginator.buildResponseBody(commentList);
+
+    res.json(resBody);
+    res.end();
 });
 
 
