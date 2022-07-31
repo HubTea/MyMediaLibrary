@@ -185,6 +185,35 @@ function checkOrderCursor(cursor, defaultOrder, parameterName){
     }
 }
 
+function checkPlaintext(text, parameterName){
+    let endCharacterList = ['a', 'z', 'A', 'Z', '0', '9', ' '];
+    let [a, z, A, Z, zero, nine, space] = endCharacterList.map(x => x.charCodeAt(0));
+    let allowed = {};
+
+    for(let i = a; i <= z; i++){
+        allowed[i] = true;
+    }
+
+    for(let i = A; i <= Z; i++){
+        allowed[i] = true;
+    }
+
+    for(let i = zero; i <= nine; i++){
+        allowed[i] = true;
+    }
+
+    allowed[space] = true;
+
+    for(let character of text){
+        if(!allowed[character.charCodeAt(0)]){
+            throw new error.IllegalParameter(null, parameterName);
+        }
+    }
+
+    return text;
+}
+
+
 
 module.exports = {
     checkAuthorizationHeader,
@@ -194,5 +223,6 @@ module.exports = {
     checkPaginationLength,
     checkDateRandomCursor,
     checkDateOrderCursor,
-    checkOrderCursor
+    checkOrderCursor,
+    checkPlaintext
 };
