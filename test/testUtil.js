@@ -412,6 +412,87 @@ function getAppendBookmarkRequestOption(body, userUuid, token){
     };
 }
 
+function sendRegisterCommentRequest({userUuid, token, mediaUuid, commentContent, parentUuid}){
+    let body = JSON.stringify({
+        writerUuid: userUuid,
+        content: commentContent,
+        parentUuid: parentUuid
+    });
+    let option = getRegisterCommentRequestOption(body, mediaUuid, token);
+    let request = new Request();
+
+    request.send(option, body);
+    return request;
+}
+
+function getRegisterCommentRequestOption(body, mediaUuid, token){
+    return {
+        method: 'post',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: `/v1/medias/${mediaUuid}/comments`,
+        headers: {
+            'Content-Length': body.length,
+            'Content-Type': 'application/json',
+            'Authorization': token
+        }
+    };
+}
+
+function sendGetMyCommentListRequest({userUuid, length, cursor}){
+    let option = getGetMyCommentListRequestOption(userUuid, length, cursor);
+    let request = new Request();
+
+    request.send(option, '');
+    return request;
+}
+
+function getGetMyCommentListRequestOption(userUuid, length, cursor){
+    let path = `/v1/users/${userUuid}/comments?`;
+
+    if(length){
+        path += `length=${length}&`;
+    }
+
+    if(cursor){
+        path += `cursor=${cursor}`;
+    }
+
+    return {
+        method: 'get',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: path
+    };
+}
+
+function sendGetMediaCommentListRequest({mediaUuid, length, cursor}){
+    let option = getGetMediaCommentListRequestOption(mediaUuid, length, cursor);
+    let request = new Request();
+
+    request.send(option, '');
+    return request;
+}
+
+function getGetMediaCommentListRequestOption(mediaUuid, length, cursor){
+    let path = `/v1/medias/${mediaUuid}/comments?`;
+
+    if(length){
+        path += `length=${length}&`;
+    }
+
+    if(cursor){
+        path += `cursor=${cursor}`;
+    }
+
+    return {
+        method: 'get',
+        hostname: 'localhost',
+        port: serverConfig.port,
+        path: path
+    };
+}
+
 
 async function registerUser({accountId, accountPassword, nickname}){
     let registerUserRequest = sendRegisterUserRequest({
@@ -556,6 +637,9 @@ module.exports = {
     sendGetFollowingListRequest,
     sendGetBookmarkRequest,
     sendAppendBookmarkRequest,
+    sendRegisterCommentRequest,
+    sendGetMyCommentListRequest,
+    sendGetMediaCommentListRequest,
 
     registerUser,
     logIn,
