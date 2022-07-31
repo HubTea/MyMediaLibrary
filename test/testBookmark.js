@@ -113,7 +113,7 @@ describe('/v1/users/{userUuid}/bookmark 테스트', function(){
 
         for(let i = 0; i < 60; i++){
             testCase.mediaList.push({
-                title: `title#${i}`,
+                title: `title${i}`,
                 description: 'desc',
                 type: 'image/png'
             });

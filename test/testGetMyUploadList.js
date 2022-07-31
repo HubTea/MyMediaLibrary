@@ -64,7 +64,7 @@ describe('GET /v1/users/{userUuid}/medias 테스트', function(){
 
         for(let i = 0; i < 60; i++){
             testCase.uploadList.push({
-                title: `video#${i}`,
+                title: `video${i}`,
                 type: 'video/mp4',
                 description: ''
             });
