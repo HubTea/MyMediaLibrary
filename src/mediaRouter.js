@@ -5,6 +5,7 @@ const sequelize = require('sequelize');
 const mediaRepository = require('./repository/mediaRepository');
 const userRepository = require('./repository/userRepository');
 const commentRepository = require('./repository/commentRepository');
+const mediaListRepository = require('./repository/mediaListRepository');
 const checker = require('./checker');
 const errorHandler = require('./errorhandler');
 const serverConfig = require('./serverConfig');
@@ -17,62 +18,42 @@ const mediaRouter = express.Router();
  * sort: 'new' | 'old' | 'most_watched'
  */
 mediaRouter.get('/', async function(req, res){
-    // let sort = req.query.sort || 'new';
-    // let cursor = req.query.cursor;
-    // let length = req.query.length;
-    // let tagString = req.query.tagString;
-    // let tagList = [];
-    // let limit;
+    try{
+        let [date, random] = checker.checkDateRandomCursor(req.query.cursor, '_', pagination.endingDate, 'cursor');
+        let length = checker.checkPaginationLength(req.query.length, 'length');
+        let paginator = new pagination.Paginator({
+            length: length,
+            mapper: function(media){
+                return {
+                    uuid: media.uuid,
+                    title: media.title,
+                    type: media.type,
+                    updateTime: media.updateTime,
+                    viewCount: media.viewCount,
+                    dislikeCount: media.dislikeCount,
+                    uploader: {
+                        uuid: media.Uploader.uuid,
+                        nickname: media.Uploader.nickname
+                    }
+                };
+            },
+            cursorLength: function(media){
+                let utcMs = media.createdAt.getTime();
+                let random = media.random;
 
-    // if(length){
-    //     length = parseInt(length);
-    // }
-    // else{
-    //     length = 50;
-    // }
-    // limit = length + 1;
+                return `${utcMs}_${random}`;
+            }
+        });
 
-    // if(tagString){
-    //     tagList = tagString.split('_');
-    // }
+        let mediaList = await mediaListRepository.getMediaList(date, random, paginator.getRequiredLength());
+        let resBody = paginator.buildResponseBody(mediaList);
 
-    // if(sort === 'new'){
-    //     let date = new Date('9999-01-01T00:00:00');
-    //     let random = -1;
-
-    //     if(cursor){
-    //         let splittedCursor = cursor.split('_');
-
-    //         date = new Date().getSetTime(parseInt(splittedCursor[0]));
-    //         random = parseInt(splittedCursor[1]);
-    //     }
-        
-    //     let searchList = await serverConfig.model.Media.findAll({
-    //         include: [{
-    //             model: serverConfig.model.User,
-    //             as: 'Uploader',
-    //             attributes: ['uuid', 'nickname']
-    //         }, {
-    //             model: serverConfig.model.Tag,
-    //             as: 'MediaTags',
-    //             where: {
-    //                 tag: {
-    //                     [sequelize.Op.in]: tagList
-    //                 }
-    //             }
-    //         }],
-    //         group: 'Media.id',
-    //         having: sequelize.literal(`count("MediaTags"."tag") = ${tagList.length}`)
-    //     });
-
-    //     console.log(searchList.map(x => x.toJSON()));
-    // }
-    // else if(sort === 'old'){
-
-    // }
-    // else if(sort === 'most_watched'){
-
-    // }
+        res.json(resBody);
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
 mediaRouter.get('/:mediaUuid/info', async function(req, res){
