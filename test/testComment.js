@@ -83,13 +83,13 @@ describe('/v1/medias/{mediaUuid}/comments, /v1/users/{userUuid}/comments 테스�
         let testCase = {
             user: {
                 accountId: 'userAccount',
-                accountPassword: 'password',
+                accountPassword: 'passwordpassword',
                 nickname: 'userNickname'
             },
 
             uploader: {
                 accountId: 'uploaderAccount',
-                accountPassword: 'password',
+                accountPassword: 'passwordpassword',
                 nickname: 'uploaderNickname'
             },
 

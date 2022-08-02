@@ -6,7 +6,7 @@ const dbInitializer = require('./dbInitializer');
 
 async function testGetMediaMetadata({title, description, type}){
     let tempAccount = 'tempAccount';
-    let tempPassword = 'tempPassword';
+    let tempPassword = 'passwordpassword';
     let tempNickname = 'tempNickname';
 
     let { userId, token } = await testUtil.registerUserAndLogIn({

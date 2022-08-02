@@ -58,7 +58,7 @@ describe('POST /v1/users 테스트', function(){
         async function(){
             await testRegisterUser({
                 accountId: 'testAccount123',
-                accountPassword: 'password#123',
+                accountPassword: 'passwordpassword',
                 nickname: 'test123'
             });
         }
@@ -69,7 +69,7 @@ describe('POST /v1/users 테스트', function(){
         async function(){
             await testRegisterDuplicatedUser({
                 accountId: 'duplicate',
-                accountPassword: 'duplicate',
+                accountPassword: 'passwordpassword',
                 nickname: 'duplicate'
             });
         }

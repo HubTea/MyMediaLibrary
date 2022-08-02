@@ -56,7 +56,7 @@ describe('GET /v1/users/{userUuid}/medias 테스트', function(){
         let testCase = {
             user: {
                 accountId: 'tempAccount',
-                accountPassword: 'tempPassword',
+                accountPassword: 'passwordpassword',
                 nickname: 'tempNickname'
             },
             uploadList: []

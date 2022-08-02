@@ -8,7 +8,7 @@ const dbInitializer = require('./dbInitializer');
 async function testMediaEndpoint({title, description, type, content}){
     let {userId, token} = await testUtil.registerUserAndLogIn({
         accountId: 'tempId',
-        accountPassword: 'tempPw',
+        accountPassword: 'passwordpassword',
         nickname: 'tempName'
     });
 

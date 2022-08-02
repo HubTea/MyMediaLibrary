@@ -5,7 +5,7 @@ const dbInitializer = require('./dbInitializer');
 
 
 async function testGetUserMetadata({accountId, nickname, introduction}){
-    let tempPassword = 'tempPassword';
+    let tempPassword = 'passwordpassword';
     let tempNickname = 'tempNickname';
 
     let { userId, token } = await testUtil.registerUserAndLogIn({

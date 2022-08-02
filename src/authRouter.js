@@ -1,5 +1,4 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 
 const auth = require('./authorizer');
 const error = require('./error');
@@ -7,6 +6,7 @@ const errorHandler = require('./errorHandler');
 const digest = require('./digest');
 const security = require('./securityService');
 const userRepository = require('./repository/userRepository');
+const checker = require('./checker');
 
 
 const router = express.Router();
@@ -15,7 +15,8 @@ const router = express.Router();
 //로그인
 router.post('/', async function(req, res){
     try{
-        let accountId = req.body.accountId;
+        let accountId = checker.checkAccountId(req.body.accountId, 'accountId');
+        let accountPassword = checker.checkAccountPassword(req.body.accountPassword, 'accountPassword');
         let userEntity = new userRepository.UserEntity();
         let user = await userEntity.getUserByAccountId(accountId);
 
@@ -26,7 +27,7 @@ router.post('/', async function(req, res){
         );
         const digestPair = new digest.DatabaseDigestPair(accountId, digestGenerator);
         
-        if(await digestPair.isEqual(req.body.accountPassword) === false){
+        if(await digestPair.isEqual(accountPassword) === false){
             throw new error.PasswordNotMatchError(null);
         }
     

@@ -75,7 +75,7 @@ describe('/v1/users/{userUuid}/following 테스트', function(){
         let testCase = {
             subscriber: {
                 accountId: 'subscriber',
-                accountPassword: 'password',
+                accountPassword: 'passwordpassword',
                 nickname: 'subscriber'
             },
             uploaderList: []
@@ -83,8 +83,8 @@ describe('/v1/users/{userUuid}/following 테스트', function(){
 
         for(let i = 0; i < 60; i++){
             testCase.uploaderList.push({
-                accountId: `uploader#${i}`,
-                accountPassword: 'password',
+                accountId: `uploader${i}`,
+                accountPassword: 'passwordpassword',
                 nickname: 'uploader'
             });
         }

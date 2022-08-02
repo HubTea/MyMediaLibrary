@@ -49,7 +49,7 @@ describe('POST /v1/auth 테스트', function(){
     it('등록된 유저 로그인 테스트', async function(){
         await testRegisteredUserLogIn({
             accountId: 'testAccount123',
-            accountPassword: 'password#123'
+            accountPassword: 'passwordpassword'
         });
     });
 
@@ -58,7 +58,7 @@ describe('POST /v1/auth 테스트', function(){
         async function(){
             await testUnregisteredUserLogIn({
                 accountId: 'unregistered',
-                accountPassword: 'unregistered'
+                accountPassword: 'passwordpassword'
             });
         }
     );

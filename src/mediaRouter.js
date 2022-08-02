@@ -58,7 +58,7 @@ mediaRouter.get('/', async function(req, res){
 
 mediaRouter.get('/:mediaUuid/info', async function(req, res){
     try{
-        let mediaUuid = req.params.mediaUuid;
+        let mediaUuid = checker.checkUuid(req.params.mediaUuid, 'media uuid');
         let mediaEntity = mediaRepository.MediaEntity.fromUuid(mediaUuid);
         
         await mediaEntity.addViewCount(1);
@@ -67,9 +67,7 @@ mediaRouter.get('/:mediaUuid/info', async function(req, res){
         let viewCount = await mediaEntity.getViewCount();
         let dislikeCount = await mediaEntity.getDislikeCount();
         
-        res.status(200);
-        res.set('Content-Type', 'application/json');
-        res.write(JSON.stringify({
+        res.json({
             title: mediaValueObject.title,
             description: mediaValueObject.description,
             type: mediaValueObject.type,
@@ -80,7 +78,7 @@ mediaRouter.get('/:mediaUuid/info', async function(req, res){
                 uuid: mediaValueObject.uploader.uuid,
                 nickname: mediaValueObject.uploader.nickname
             }
-        }));
+        });
         res.end();
     }
     catch(err){
@@ -105,7 +103,7 @@ mediaRouter.get('/:mediaUuid', async function(req, res){
 
 mediaRouter.post('/:mediaUuid', async function(req, res){
     try{
-        let mediaUuid = req.params.mediaUuid;
+        let mediaUuid = checker.checkUuid(req.params.mediaUuid, 'media uuid');
         let authorizer = await checker.checkAuthorizationHeader(req);
 
         await checker.checkMediaAuthorization(authorizer, mediaUuid);
@@ -137,7 +135,7 @@ mediaRouter.get('/:mediaUuid/comments', async function(req, res){
                 return {
                     uuid: comment.uuid,
                     writer: {
-                        userUuid: comment.CommentWriter.uuid,
+                        uuid: comment.CommentWriter.uuid,
                         nickname: comment.CommentWriter.nickname
                     },
                     content: comment.content,

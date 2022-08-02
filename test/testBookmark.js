@@ -97,13 +97,13 @@ describe('/v1/users/{userUuid}/bookmark 테스트', function(){
         let testCase = {
             user: {
                 accountId: 'viewer',
-                accountPassword: 'password',
+                accountPassword: 'passwordpassword',
                 nickname: 'viewer'
             },
 
             uploader: {
                 accountId: 'uploader',
-                accountPassword: 'password',
+                accountPassword: 'passwordpassword',
                 nickname: 'uploader'
             },
 

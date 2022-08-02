@@ -21,10 +21,14 @@ const router = express.Router();
 //유저 등록
 router.post('/', async function(req, res){
     try{
+        let accountId = checker.checkAccountId(req.body.accountId, 'accountId');
+        let accountPassword = checker.checkAccountPassword(req.body.accountPassword, 'accountPassword');
+        let nickname = checker.checkPlaintext(req.body.nickname, 'nickname');
+        
         let userSeed = await createUserSeed({
-            accountId: req.body.accountId,
-            accountPw: req.body.accountPassword,
-            nickname: req.body.nickname
+            accountId: accountId,
+            accountPw: accountPassword,
+            nickname: nickname
         });
         let userEntity = new userRepository.UserEntity();
 
@@ -64,14 +68,9 @@ async function createUserSeed({accountId, accountPw, nickname}){
 }
 
 
-router.put('/:userUuid/password', function(req, res){
-
-});
-
-
 router.get('/:userUuid/info', async function(req, res){
     try{
-        let userUuid = req.params.userUuid;
+        let userUuid = checker.checkUuid(req.params.userUuid);
         let userEntity = new userRepository.UserEntity();
         let userValueObject = await userEntity.getUserByUuid(userUuid);
 
@@ -89,10 +88,9 @@ router.get('/:userUuid/info', async function(req, res){
 
 router.patch('/:userUuid/info', async function(req, res){
     try{
-        let userUuid = req.params.userUuid;
-        let userInfo = req.body;
-        let nickname = userInfo.nickname;
-        let introduction = userInfo.introduction;
+        let userUuid = checker.checkUuid(req.params.userUuid);
+        let nickname = checker.checkPlaintext(req.body.nickname);
+        let introduction = checker.checkPlaintext(req.body.introduction);
 
         let authorizer = await checker.checkAuthorizationHeader(req);
 
@@ -182,8 +180,7 @@ router.get('/:userUuid/medias', async function(req, res){
 
         let resBody = paginator.buildResponseBody(myUploadList);
     
-        res.set('Content-Type', 'application/json');
-        res.write(JSON.stringify(resBody));
+        res.json(resBody);
         res.end();
     }
     catch(err){
@@ -328,11 +325,6 @@ router.post('/:userUuid/bookmarks', async function(req, res){
 });
 
 
-/**
- * length: 1 이상의 정수
- * cursor: `${정수}_${정수}`형식의 문자열
- * parentUuid: uuid
- */
 router.get('/:userUuid/comments', async function(req, res){
     let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
     let length = checker.checkPaginationLength(req.query.length, 'length');
@@ -390,12 +382,6 @@ router.get('/:userUuid/comments', async function(req, res){
     res.json(resBody);
     res.end();
 });
-
-
-router.patch('/:userId/thumbnail');
-
-
-
 
 
 module.exports = {

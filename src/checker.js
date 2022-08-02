@@ -214,6 +214,40 @@ function checkMimeType(type, parameterName){
     return type;
 }
 
+function checkAccountId(accountId, parameterName){
+    if(!accountId){
+        let exception = new error.OmittedParameterError();
+
+        exception.appendParameter(parameterName);
+        throw exception;
+    }
+
+    if(accountId.length > 30){
+        throw new error.IllegalParameter(null, parameterName);
+    }
+
+    checkPlaintext(accountId, parameterName);
+
+    return accountId;
+}
+
+function checkAccountPassword(password, parameterName){
+    if(!password){
+        let exception = new error.OmittedParameterError();
+
+        exception.appendParameter(parameterName);
+        throw exception;
+    }
+
+    if(password.length < 12 || password.length > 30){
+        throw new error.IllegalParameter(null, parameterName);
+    }
+
+    checkPlaintext(password, parameterName);
+
+    return password;
+}
+
 module.exports = {
     checkAuthorizationHeader,
     checkUserAuthorization,
@@ -224,5 +258,7 @@ module.exports = {
     checkDateOrderCursor,
     checkOrderCursor,
     checkPlaintext,
-    checkMimeType
+    checkMimeType,
+    checkAccountId,
+    checkAccountPassword
 };

@@ -5,7 +5,7 @@ const dbInitializer = require('./dbInitializer');
 
 
 async function testPatchUserMetadata({accountId, nickname, introduction}){
-    let password = 'password';
+    let password = 'passwordpassword';
     let tempNickname = 'tempNickname';
 
     let { userId, token } = await testUtil.registerUserAndLogIn({
