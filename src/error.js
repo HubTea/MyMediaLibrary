@@ -50,28 +50,6 @@ class UserAlreadyExistError extends ErrorResponse{
 }
 
 
-class IllegalAccountPasswordError extends ErrorResponse{
-    constructor(underlyingError){
-        super(400, 'ILLEGAL_ACCOUNT_PASSWORD', underlyingError);
-    }
-}
-
-
-class IllegalAccountIdError extends ErrorResponse{
-    constructor(underlyingError){
-        super(400, 'ILLEGAL_ACCOUNT_ID', underlyingError);
-    }
-}
-
-
-class DatabaseError extends ErrorResponse{
-    constructor(underlyingError){
-        super(500, 'QUERY_FAILED_ERROR', underlyingError);
-    }
-
-}
-
-
 class OmittedParameterError extends ErrorResponse{
     constructor(underlyingError){
         super(400, 'PARAMETER_OMITTED', underlyingError);
@@ -90,10 +68,32 @@ class OmittedParameterError extends ErrorResponse{
 }
 
 
+class IllegalParameter extends ErrorResponse{
+    constructor(underlyingError, parameterName){
+        super(400, 'IllegalParameter', underlyingError);
+
+        this.parameterName = parameterName;
+        this.evaluateMessage();
+    }
+
+    evaluateMessage(){
+        this.message = `Parameter: ${this.parameterName}`;
+    }
+}
+
+
 class NotFoundError extends ErrorResponse{
     constructor(underlyingError){
         super(404, 'NOT_FOUND', underlyingError);
     }
+}
+
+
+class DatabaseError extends ErrorResponse{
+    constructor(underlyingError){
+        super(500, 'QUERY_FAILED_ERROR', underlyingError);
+    }
+
 }
 
 
@@ -103,11 +103,13 @@ class FileStorageError extends ErrorResponse{
     }
 }
 
+
 class NotPreparedError extends ErrorResponse{
     constructor(){
         super(500, 'NOT_PREPARED', null);
     }
 }
+
 
 class InternalError extends ErrorResponse{
     constructor(underlyingError){
@@ -119,20 +121,6 @@ class InternalError extends ErrorResponse{
 class UnexpectedError extends ErrorResponse{
     constructor(underlyingError){
         super(500, 'UNEXPECTED_ERROR', underlyingError);
-    }
-}
-
-
-class IllegalParameter extends ErrorResponse{
-    constructor(underlyingError, parameterName){
-        super(400, 'IllegalParameter', underlyingError);
-
-        this.parameterName = parameterName;
-        this.evaluateMessage();
-    }
-
-    evaluateMessage(){
-        this.message = `Parameter: ${this.parameterName}`;
     }
 }
 
@@ -153,8 +141,6 @@ module.exports = {
     PasswordNotMatchError,
     UserNotExistError,
     UserAlreadyExistError,
-    IllegalAccountIdError,
-    IllegalAccountPasswordError,
     IllegalParameter,
     DatabaseError,
     OmittedParameterError,
