@@ -19,7 +19,9 @@ async function checkAuthorizationHeader(req){
     let token = req.get('Authorization');
 
     if(!token){
-        throw new error.OmittedParameterError().appendParameter('Authorization 헤더');
+        let exception = new error.OmittedParameterError();
+        exception.appendParameter('Authorization 헤더');
+        throw exception;
     }
 
     let jwtVerifier = new security.JwtVerifier();
