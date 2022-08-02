@@ -151,7 +151,7 @@ class MediaEntity{
     async getDownloadStream(){
         this.assertPrepared();
 
-        let file = await fsPromise.open(`C:\\storage\\${this.getPath()}`);
+        let file = await fsPromise.open(this.getPath());
         return file.createReadStream();
 
         try{
@@ -170,7 +170,7 @@ class MediaEntity{
     async upload(content){
         this.assertPrepared();
 
-        let file = await fsPromise.open(`C:\\storage\\${this.getPath()}`, 'w');
+        let file = await fsPromise.open(this.getPath(), 'w');
         await streamPromise.pipeline(
             content, file.createWriteStream()
         );
@@ -187,7 +187,7 @@ class MediaEntity{
     }
 
     getPath(){
-        return `mediaContent/${this.uuid}`;
+        return `C:\\storage\\mediaContent\\${this.uuid}`;
     }
 
     assertPrepared(){
@@ -209,10 +209,10 @@ function setRandom(mediaValueObject){
 
 function wrapStorageError(err){
     if(err instanceof s3.NotFound || err instanceof s3.NoSuchKey){
-        return error.NotFoundError(err);
+        return new error.NotFoundError(err);
     }
     else if(err instanceof s3.S3ServiceException){
-        return error.FileStorageError(err);
+        return new error.FileStorageError(err);
     }
     else{
         return err;
