@@ -501,11 +501,9 @@ async function registerUser({accountId, accountPassword, nickname}){
         nickname: nickname
     });
     let registerUserResponse = await registerUserRequest.getResponse();
-    let userPath = registerUserResponse.headers.location;
-    let splittedPath = userPath.split('/');
-    let userId = splittedPath[splittedPath.length - 1];
+    let userUuid = registerUserResponse.headers.location;
 
-    return userId;
+    return userUuid;
 }
 
 async function logIn({accountId, accountPassword}){
@@ -546,8 +544,7 @@ async function registerMedia({userUuid, token, title, type, description}){
         title: title        
     });
     let registerMediaResponse = await registerMediaRequest.getResponse();
-    let splittedPath = registerMediaResponse.headers.location.split('/');
-    let mediaUuid = splittedPath[splittedPath.length - 1];
+    let mediaUuid = registerMediaResponse.headers.location;
 
     return mediaUuid;
 }

@@ -23,12 +23,10 @@ async function testGetMediaMetadata({title, description, type}){
         title: title        
     });
     let registerMediaResponse = await registerMediaRequest.getResponse();
-
-    let splittedPath = registerMediaResponse.headers.location.split('/');
-    let mediaId = splittedPath[splittedPath.length - 1];
+    let mediaUuid = registerMediaResponse.headers.location;
 
     let getMediaMetadataRequest = testUtil.sendGetMediaMetadataRequest({
-        mediaId: mediaId
+        mediaId: mediaUuid
     });
     let getMediaMetadataResponse = await getMediaMetadataRequest.getResponse();
     let metadata = await getMediaMetadataRequest.getBodyObject();

@@ -31,7 +31,7 @@ router.post('/', async function(req, res){
         let userValueObject = await userEntity.createUser(userSeed);
 
         res.status(201);
-        res.setHeader('Location', `/v1/users/${userValueObject.uuid}`);
+        res.setHeader('Location', `${userValueObject.uuid}`);
         res.end();
     }
     catch(err){
@@ -138,7 +138,7 @@ router.post('/:userUuid/medias', async function(req, res){
         });
 
         res.status(201);
-        res.setHeader('Location', `/v1/medias/${mediaValueObject.uuid}`);
+        res.setHeader('Location', `${mediaValueObject.uuid}`);
         res.end();
     }
     catch(err){

@@ -1,4 +1,5 @@
 const assert = require('assert');
+const uuid = require('uuid');
 
 const testUtil = require('./testUtil');
 const dbInitializer = require('./dbInitializer');
@@ -21,15 +22,12 @@ async function testMediaEndpoint({title, description, type, content}){
     let registerMediaResponse = await registerMediaRequest.getResponse();
 
     assert.strictEqual(registerMediaResponse.statusCode, 201);
-    assert.ok(registerMediaResponse.headers.location);
+    assert.ok(uuid.validate(registerMediaResponse.headers.location));
 
-    console.log(registerMediaResponse.headers.location);
-
-    let splittedPath = registerMediaResponse.headers.location.split('/');
-    let mediaId = splittedPath[splittedPath.length - 1];
+    let mediaUuid = registerMediaResponse.headers.location;
 
     let uploadMediaRequest = testUtil.sendUploadMediaRequest({
-        mediaId: mediaId,
+        mediaId: mediaUuid,
         content: content,
         type: type,
         token: token
@@ -39,7 +37,7 @@ async function testMediaEndpoint({title, description, type, content}){
     assert.strictEqual(uploadMediaResponse.statusCode, 200);
 
     let downloadMediaRequest = testUtil.sendDownloadMediaRequest({
-        mediaId: mediaId
+        mediaId: mediaUuid
     });
     let downloadMediaResponse = await downloadMediaRequest.getResponse();
     let downloadedContent = await downloadMediaRequest.getBodyBuffer();

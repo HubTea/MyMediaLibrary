@@ -21,15 +21,12 @@ async function testRegisterUser({accountId, accountPassword, nickname}){
 function assertUserUrlIn(response){
     let responseHeader = response.headers;
 
-    console.log(`response header: ${responseHeader}`);
-
     assert.ok(typeof responseHeader.location === 'string');
 
-    let newUserUrl = responseHeader.location;
-    let newUserId = path.basename(newUserUrl);
+    let newUserUuid = responseHeader.location;
 
     assert.strictEqual(response.statusCode, 201);
-    assert.ok(uuid.validate(newUserId));
+    assert.ok(uuid.validate(newUserUuid));
 }
 
 async function testRegisterDuplicatedUser({accountId, accountPassword, nickname}){
