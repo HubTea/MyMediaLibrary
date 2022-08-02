@@ -22,27 +22,12 @@ async function checkAuthorizationHeader(req){
         throw new error.OmittedParameterError().appendParameter('Authorization 헤더');
     }
 
-    let payload = await getTokenPayload(token);
+    let jwtVerifier = new security.JwtVerifier();
+    let key = security.key.hmac;
+    let option = security.jwtOption;
+    let payload = await jwtVerifier.verify(token, key, option);
 
     return new authorizer.Authorizer(payload.authorizer);
-}
-
-function getTokenPayload(token){
-    return new Promise(function(resolve, reject){
-        jwt.verify(
-            token, security.key.hmac, 
-            {
-                algorithms: 'HS256'
-            }, 
-            function(err, decoded){
-                if(err){
-                    reject(new error.InvalidJwtError(err));
-                }
-
-                resolve(decoded);
-            }
-        );
-    });
 }
 
 function checkUserAuthorization(authorizer, userUuid){

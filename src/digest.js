@@ -49,7 +49,7 @@ class DigestPair{
     /**
      * 
      * @param {string} password 
-     * @returns {boolean}
+     * @returns {Promise<boolean>}
      */
     async isEqual(password){
         const digestPair = await this.getDigestPair();
