@@ -52,7 +52,7 @@ describe('GET /v1/users/{userUuid}/medias 테스트', function(){
         });
     });
 
-    it('123개의 미디어 등록 후 업로드 목록 조회 테스트', async function(){
+    it('미디어 등록 후 업로드 목록 조회 테스트', async function(){
         let testCase = {
             user: {
                 accountId: 'tempAccount',
