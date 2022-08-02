@@ -20,33 +20,32 @@ class GetBookmarkRequestFactory extends testUtil.RequestFactory{
 
 
 async function testBookmark(testCase){
-    let userUuidPromise = testUtil.registerUser({
+    await testUtil.registerUser({
         accountId: testCase.user.accountId,
         accountPassword: testCase.user.accountPassword,
         nickname: testCase.user.nickname
     });
 
-    let uploaderUuidPromise = testUtil.registerUser({
+    await testUtil.registerUser({
         accountId: testCase.uploader.accountId,
         accountPassword: testCase.uploader.accountPassword,
         nickname: testCase.uploader.nickname
     });
 
-    let userUuid = await userUuidPromise;
-    let uploaderUuid = await uploaderUuidPromise;
-
-    let userTokenPromise = testUtil.logIn({
+    let userSession = await testUtil.logIn({
         accountId: testCase.user.accountId,
         accountPassword: testCase.user.accountPassword,
     });
 
-    let uploaderTokenPromise = testUtil.logIn({
+    let uploaderSession = await testUtil.logIn({
         accountId: testCase.uploader.accountId,
         accountPassword: testCase.uploader.accountPassword
     });
 
-    let userToken = await userTokenPromise;
-    let uploaderToken = await uploaderTokenPromise;
+    let userUuid = userSession.userUuid;
+    let userToken = userSession.token;
+    let uploaderUuid = uploaderSession.userUuid;
+    let uploaderToken = uploaderSession.token;
     
     let mediaUuidPromiseList = [];
     

@@ -46,6 +46,7 @@ router.post('/', async function(req, res){
         let token = await jwtGenerator.generate(payload, key, option);
 
         res.write(JSON.stringify({
+            userUuid: user.uuid,
             token: token
         }));
         res.end();

@@ -1,5 +1,6 @@
 const assert = require('assert');
 const jwt = require('jsonwebtoken');
+const uuid = require('uuid');
 
 const testUtil = require('./testUtil');
 const error = require('../src/error');
@@ -22,9 +23,8 @@ async function testRegisteredUserLogIn({accountId, accountPassword}){
     let logInResponseBody = await logInRequest.getBodyObject();
 
     assert.strictEqual(logInResponse.statusCode, 200);
-
-    console.log(logInResponseBody);
-    console.log(jwt.decode(logInResponseBody.token));
+    assert.ok(uuid.validate(logInResponseBody.userUuid));
+    assert.ok(jwt.decode(logInResponseBody.token));
 }
 
 async function testUnregisteredUserLogIn({accountId, accountPassword}){

@@ -514,9 +514,13 @@ async function logIn({accountId, accountPassword}){
         accountPassword: accountPassword
     });
     let logInBody = await logInRequest.getBodyObject();
+    let userUuid = logInBody.userUuid; 
     let token = logInBody.token;
 
-    return token;
+    return {
+        userUuid: userUuid,
+        token: token
+    };
 }
 
 async function registerUserAndLogIn({accountId, accountPassword, nickname}){
@@ -526,10 +530,10 @@ async function registerUserAndLogIn({accountId, accountPassword, nickname}){
             accountPassword: accountPassword,
             nickname: nickname
         }),
-        token: await logIn({
+        token: (await logIn({
             accountId: accountId,
             accountPassword: accountPassword
-        }),
+        })).token,
     };
 }
 

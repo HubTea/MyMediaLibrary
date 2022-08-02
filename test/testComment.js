@@ -35,9 +35,9 @@ class MediaCommentListRequestFactory extends testUtil.RequestFactory{
 
 async function testNotNestedComment(testCase){
     let userUuid = await testUtil.registerUser(testCase.user);
-    let userToken = await testUtil.logIn(testCase.user);
+    let userToken = (await testUtil.logIn(testCase.user)).token;
     let uploaderUuid = await testUtil.registerUser(testCase.uploader);
-    let uploaderToken = await testUtil.logIn(testCase.uploader);
+    let uploaderToken = (await testUtil.logIn(testCase.uploader)).token;
     let mediaUuid = await testUtil.registerMedia({
         userUuid: uploaderUuid,
         token: uploaderToken,
