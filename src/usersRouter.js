@@ -193,34 +193,39 @@ router.get('/:userUuid/medias', async function(req, res){
 
 
 router.get('/:userUuid/following', async function(req, res){
-    let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
-    let length = checker.checkPaginationLength(req.query.length, 'length');
-    let order = checker.checkOrderCursor(req.query.cursor, pagination.maximumOrder, 'cursor');
-    let paginator = new pagination.Paginator({
-        length: length,
-        mapper: function(subscribeInfo){
-            let uploader = subscribeInfo.SubscribedUploader;
-            return {
-                uuid: uploader.uuid,
-                nickname: uploader.nickname
-            };
-        },
-        cursorFactory: function(subscribeInfo){
-            return subscribeInfo.order.toString();
-        }
-    });
-    let userEntity = new userRepository.UserEntity();
-    let userValueObject = await userEntity.getUserByUuid(userUuid);
-
-    let uploaderList = await followingListRepository.getFollowingUserDescendingList(
-        userValueObject.id, order, paginator.getRequiredLength()
-    );
-
-    let resBody = paginator.buildResponseBody(uploaderList);
-
-    res.set('Content-Type', 'application/json');
-    res.write(JSON.stringify(resBody, null, 5));
-    res.end();
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let length = checker.checkPaginationLength(req.query.length, 'length');
+        let order = checker.checkOrderCursor(req.query.cursor, pagination.maximumOrder, 'cursor');
+        let paginator = new pagination.Paginator({
+            length: length,
+            mapper: function(subscribeInfo){
+                let uploader = subscribeInfo.SubscribedUploader;
+                return {
+                    uuid: uploader.uuid,
+                    nickname: uploader.nickname
+                };
+            },
+            cursorFactory: function(subscribeInfo){
+                return subscribeInfo.order.toString();
+            }
+        });
+        let userEntity = new userRepository.UserEntity();
+        let userValueObject = await userEntity.getUserByUuid(userUuid);
+    
+        let uploaderList = await followingListRepository.getFollowingUserDescendingList(
+            userValueObject.id, order, paginator.getRequiredLength()
+        );
+    
+        let resBody = paginator.buildResponseBody(uploaderList);
+    
+        res.set('Content-Type', 'application/json');
+        res.write(JSON.stringify(resBody, null, 5));
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
 router.post('/:userUuid/following', async function(req, res){
@@ -329,61 +334,66 @@ router.post('/:userUuid/bookmarks', async function(req, res){
 
 
 router.get('/:userUuid/comments', async function(req, res){
-    let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
-    let length = checker.checkPaginationLength(req.query.length, 'length');
-    let [date, random] = checker.checkDateRandomCursor(req.query.cursor, '_', pagination.beginningDate, 'cursor');
-    let parentUuid = req.query.parentUuid;
-    let commentList;
-
-    let paginator = new pagination.Paginator({
-        length: length,
-        mapper: function(comment){
-            return {
-                uuid: comment.uuid,
-                writer: {
-                    uuid: comment.CommentWriter.uuid,
-                    nickname: comment.CommentWriter.nickname
-                },
-                media: {
-                    uuid: comment.CommentTarget.uuid,
-                    title: comment.CommentTarget.title
-                },
-                content: comment.content,
-                createdAt: comment.createdAt.toISOString(),
-                updatedAt: comment.updatedAt.toISOString()
-            };
-        },
-        cursorFactory: function(comment){
-            let utcMs = comment.createdAt.getTime();
-            let random = comment.random;
-
-            return `${utcMs}_${random}`;
-        }
-    });
-    let requiredLength = paginator.getRequiredLength();
-
-    if(parentUuid){
-        checker.checkUuid(parentUuid, 'parent uuid');
-
-        let parentComment = await commentRepository.getCommentByUuid(parentUuid);
-
-        commentList = await commentRepository.getChildCommentListWithMediaReference(
-            date, random, requiredLength, parentComment.id
-        );
-    }
-    else{
-        let userEntity = new userRepository.UserEntity();
-        let userValueObject = await userEntity.getUserByUuid(userUuid);
-
-        commentList = await commentRepository.getMyCommentListWithMediaReference(
-            date, random, requiredLength, userValueObject.id
-        );
-    }
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let length = checker.checkPaginationLength(req.query.length, 'length');
+        let [date, random] = checker.checkDateRandomCursor(req.query.cursor, '_', pagination.beginningDate, 'cursor');
+        let parentUuid = req.query.parentUuid;
+        let commentList;
     
-    let resBody = paginator.buildResponseBody(commentList);
-
-    res.json(resBody);
-    res.end();
+        let paginator = new pagination.Paginator({
+            length: length,
+            mapper: function(comment){
+                return {
+                    uuid: comment.uuid,
+                    writer: {
+                        uuid: comment.CommentWriter.uuid,
+                        nickname: comment.CommentWriter.nickname
+                    },
+                    media: {
+                        uuid: comment.CommentTarget.uuid,
+                        title: comment.CommentTarget.title
+                    },
+                    content: comment.content,
+                    createdAt: comment.createdAt.toISOString(),
+                    updatedAt: comment.updatedAt.toISOString()
+                };
+            },
+            cursorFactory: function(comment){
+                let utcMs = comment.createdAt.getTime();
+                let random = comment.random;
+    
+                return `${utcMs}_${random}`;
+            }
+        });
+        let requiredLength = paginator.getRequiredLength();
+    
+        if(parentUuid){
+            checker.checkUuid(parentUuid, 'parent uuid');
+    
+            let parentComment = await commentRepository.getCommentByUuid(parentUuid);
+    
+            commentList = await commentRepository.getChildCommentListWithMediaReference(
+                date, random, requiredLength, parentComment.id
+            );
+        }
+        else{
+            let userEntity = new userRepository.UserEntity();
+            let userValueObject = await userEntity.getUserByUuid(userUuid);
+    
+            commentList = await commentRepository.getMyCommentListWithMediaReference(
+                date, random, requiredLength, userValueObject.id
+            );
+        }
+        
+        let resBody = paginator.buildResponseBody(commentList);
+    
+        res.json(resBody);
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
 
