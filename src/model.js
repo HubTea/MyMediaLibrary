@@ -122,6 +122,14 @@ module.exports = function GetModels(sequelize){
             allowNull: false
         },
 
+        //태그들을 , 로 연결한 문자열.
+        //,태그1,태그2,태그3, 형식을 따라야 함.
+        tagString: {
+            type: DataTypes.STRING,
+            defaultValue: '',
+            allowNull: false
+        },
+
         random: {
             type: DataTypes.INTEGER,
             allowNull: false
@@ -199,26 +207,26 @@ module.exports = function GetModels(sequelize){
         freezeTableName: true
     });
 
-    Tag.init({
-        mediaId: {
-            type: DataTypes.INTEGER,
-            primaryKey: true,
-            references: {
-                model: Media,
-                key: 'id'
-            }
-        },
+    // Tag.init({
+    //     mediaId: {
+    //         type: DataTypes.INTEGER,
+    //         primaryKey: true,
+    //         references: {
+    //             model: Media,
+    //             key: 'id'
+    //         }
+    //     },
 
-        tag: {
-            type: DataTypes.STRING,
-            primaryKey: true
-        }
-    }, {
-        sequelize,
-        omitNull: true,
-        timestamps: false,
-        freezeTableName: true
-    });
+    //     tag: {
+    //         type: DataTypes.STRING,
+    //         primaryKey: true
+    //     }
+    // }, {
+    //     sequelize,
+    //     omitNull: true,
+    //     timestamps: false,
+    //     freezeTableName: true
+    // });
 
     Comment.init({
         id: {
@@ -274,6 +282,7 @@ module.exports = function GetModels(sequelize){
         freezeTableName: true
     });
 
+
     User.hasMany(Media, {
         as: 'MyMedias',
         foreignKey: 'uploaderId'
@@ -283,18 +292,7 @@ module.exports = function GetModels(sequelize){
         foreignKey: 'uploaderId'
     });
 
-    // User.belongsToMany(Media, {
-    //     through: Bookmark, 
-    //     as: 'Collections', 
-    //     foreignKey: 'userId',
-    //     otherKey: 'mediaId'
-    // });
-    // Media.belongsToMany(User, {
-    //     through: Bookmark, 
-    //     as: 'Collectors', 
-    //     foreignKey: 'mediaId',
-    //     otherKey: 'userId'
-    // });
+
     User.hasMany(Bookmark, {
         foreignKey: 'userId'
     });
@@ -308,12 +306,7 @@ module.exports = function GetModels(sequelize){
         foreignKey: 'mediaId'
     });
 
-    // User.belongsToMany(User, {
-    //     through: Subscribe, 
-    //     as: 'Subscribers',
-    //     foreignKey: 'subscriberId',
-    //     otherKey: 'uploaderId'
-    // });
+
     User.hasMany(Subscribe, {
         as: 'UploaderSubscribers',
         foreignKey: 'uploaderId'
@@ -341,14 +334,15 @@ module.exports = function GetModels(sequelize){
         foreignKey: 'parentId'
     });
 
-    Tag.belongsTo(Media, {
-        as: 'TaggedMedia',
-        foreignKey: 'mediaId'
-    });
-    Media.hasMany(Tag, {
-        as: 'MediaTags',
-        foreignKey: 'mediaId'
-    });
+    // Tag.belongsTo(Media, {
+    //     as: 'TaggedMedia',
+    //     foreignKey: 'mediaId'
+    // });
+    // Media.hasMany(Tag, {
+    //     as: 'MediaTags',
+    //     foreignKey: 'mediaId'
+    // });
+
 
     Media.hasMany(Comment, {
         as: 'MediaComments',
@@ -359,6 +353,7 @@ module.exports = function GetModels(sequelize){
         foreignKey: 'mediaId'
     });
 
+
     User.hasMany(Comment, {
         as: 'UserComments',
         foreignKey: 'writerId'
@@ -367,6 +362,7 @@ module.exports = function GetModels(sequelize){
         as: 'CommentWriter',
         foreignKey: 'writerId'
     });
+
 
     return {
         User, 

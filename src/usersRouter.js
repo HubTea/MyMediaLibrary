@@ -14,6 +14,7 @@ const commentRepository = require('./repository/commentRepository');
 const checker = require('./checker');
 const serverConfig = require('./serverConfig');
 const pagination = require('./pagination');
+const tagManipulator = require('./tag');
 
 const router = express.Router();
 
@@ -119,6 +120,7 @@ router.post('/:userUuid/medias', async function(req, res){
         let title = checker.checkPlaintext(req.body.title, 'title');
         let description = checker.checkPlaintext(req.body.description, 'description');
         let type = checker.checkMimeType(req.body.type, 'type');
+        let tagList = checker.checkTagList(req.body.tagList, 'tag list');
 
         let authorizer = await checker.checkAuthorizationHeader(req);
 
@@ -132,7 +134,8 @@ router.post('/:userUuid/medias', async function(req, res){
             title: title,
             description: description,
             type: type,
-            uploaderId: userValueObject.id
+            uploaderId: userValueObject.id,
+            tagString: tagManipulator.concatenateTagList(tagList)
         });
 
         res.status(201);

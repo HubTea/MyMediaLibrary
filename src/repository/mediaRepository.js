@@ -89,7 +89,8 @@ class MediaEntity{
      *  title: string,
      *  description: string,
      *  type: string,
-     *  uploaderId: number
+     *  uploaderId: number,
+     *  tagString: string
      * }
      * ```
      * @returns 

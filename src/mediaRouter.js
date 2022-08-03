@@ -10,6 +10,7 @@ const checker = require('./checker');
 const errorHandler = require('./errorhandler');
 const serverConfig = require('./serverConfig');
 const pagination = require('./pagination');
+const tagManipulator = require('./tag');
 
 
 const mediaRouter = express.Router();
@@ -74,6 +75,7 @@ mediaRouter.get('/:mediaUuid/info', async function(req, res){
             updateTime: mediaValueObject.updateTime,
             viewCount: viewCount,
             dislikeCount: dislikeCount,
+            tagList: tagManipulator.splitTagString(mediaValueObject.tagString),
             uploader: {
                 uuid: mediaValueObject.uploader.uuid,
                 nickname: mediaValueObject.uploader.nickname

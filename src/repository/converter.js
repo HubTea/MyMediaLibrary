@@ -15,7 +15,8 @@ function mediaToValueObject(media){
         description: media.description,
         type: media.type,
         uploaderId: media.uploaderId,
-        updateTime: media.updateTime
+        updateTime: media.updateTime,
+        tagString: media.tagString
     };
 }
 

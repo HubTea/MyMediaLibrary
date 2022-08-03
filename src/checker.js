@@ -248,6 +248,26 @@ function checkAccountPassword(password, parameterName){
     return password;
 }
 
+function checkTagList(tagList, parameterName){
+    if(!Array.isArray(tagList)){
+        return [];
+    }
+
+    if(tagList.length > 10){
+        throw new error.IllegalParameter(null, parameterName);
+    }
+
+    for(let tag of tagList){
+        checkPlaintext(tag, parameterName);
+        
+        if(tag.length > 20){
+            throw new error.IllegalParameter(null, parameterName);
+        }
+    }
+
+    return tagList;
+}
+
 module.exports = {
     checkAuthorizationHeader,
     checkUserAuthorization,
@@ -260,5 +280,6 @@ module.exports = {
     checkPlaintext,
     checkMimeType,
     checkAccountId,
-    checkAccountPassword
+    checkAccountPassword,
+    checkTagList
 };
