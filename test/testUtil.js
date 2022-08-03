@@ -439,15 +439,15 @@ function getRegisterCommentRequestOption(body, mediaUuid, token){
     };
 }
 
-function sendGetMyCommentListRequest({userUuid, length, cursor}){
-    let option = getGetMyCommentListRequestOption(userUuid, length, cursor);
+function sendGetMyCommentListRequest({userUuid, length, cursor, parentCommentUuid}){
+    let option = getGetMyCommentListRequestOption(userUuid, length, cursor, parentCommentUuid);
     let request = new Request();
 
     request.send(option, '');
     return request;
 }
 
-function getGetMyCommentListRequestOption(userUuid, length, cursor){
+function getGetMyCommentListRequestOption(userUuid, length, cursor, parentCommentUuid){
     let path = `/v1/users/${userUuid}/comments?`;
 
     if(length){
@@ -455,7 +455,11 @@ function getGetMyCommentListRequestOption(userUuid, length, cursor){
     }
 
     if(cursor){
-        path += `cursor=${cursor}`;
+        path += `cursor=${cursor}&`;
+    }
+
+    if(parentCommentUuid){
+        path += `parentUuid=${parentCommentUuid}`;
     }
 
     return {
@@ -466,15 +470,15 @@ function getGetMyCommentListRequestOption(userUuid, length, cursor){
     };
 }
 
-function sendGetMediaCommentListRequest({mediaUuid, length, cursor}){
-    let option = getGetMediaCommentListRequestOption(mediaUuid, length, cursor);
+function sendGetMediaCommentListRequest({mediaUuid, length, cursor, parentCommentUuid}){
+    let option = getGetMediaCommentListRequestOption(mediaUuid, length, cursor, parentCommentUuid);
     let request = new Request();
 
     request.send(option, '');
     return request;
 }
 
-function getGetMediaCommentListRequestOption(mediaUuid, length, cursor){
+function getGetMediaCommentListRequestOption(mediaUuid, length, cursor, parentCommentUuid){
     let path = `/v1/medias/${mediaUuid}/comments?`;
 
     if(length){
@@ -482,7 +486,11 @@ function getGetMediaCommentListRequestOption(mediaUuid, length, cursor){
     }
 
     if(cursor){
-        path += `cursor=${cursor}`;
+        path += `cursor=${cursor}&`;
+    }
+
+    if(parentCommentUuid){
+        path += `parentUuid=${parentCommentUuid}`;
     }
 
     return {
@@ -549,7 +557,19 @@ async function registerMedia({userUuid, token, title, type, description}){
     return mediaUuid;
 }
 
+async function comment({userUuid, token, mediaUuid, content, parentCommentUuid}){
+    let request = sendRegisterCommentRequest({
+        userUuid: userUuid,
+        token: token,
+        mediaUuid: mediaUuid,
+        commentContent: content,
+        parentUuid: parentCommentUuid
+    });
+    let response = await request.getResponse();
+    let commentUuid = response.headers.location;
 
+    return commentUuid;
+}
 
 
 class PageAssembler{
@@ -645,5 +665,6 @@ module.exports = {
     registerUser,
     logIn,
     registerUserAndLogIn,
-    registerMedia
+    registerMedia,
+    comment
 };
