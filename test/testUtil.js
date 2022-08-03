@@ -189,11 +189,12 @@ function getGetUserMetadataOption(userId){
     return requestOption;
 }
 
-function sendRegisterMediaRequest({userId, token, title, description, type}){
+function sendRegisterMediaRequest({userId, token, title, description, type, tagList}){
     let body = JSON.stringify({
         title: title,
         description: description,
-        type: type
+        type: type,
+        tagList: tagList
     });
     let option = getRegisterMediaRequestOption(body, userId, token);
 
