@@ -1,7 +1,44 @@
 const http = require('http');
 const assert = require('assert');
+const qs = require('qs');
 
 const serverConfig = require('../src/serverConfig');
+
+
+function defaultQuerySerializer(query){
+    return qs.stringify(query, {
+        arrayFormat: 'repeat'
+    });
+}
+
+const localhostRequestOption = {
+    baseURL: 'http://localhost:443/v1/',
+    paramsSerializer: defaultQuerySerializer,
+    ValidityState: null
+};
+
+class RequestOptionBuilder{
+    constructor(base){
+        this.base = Object.assign({}, base);
+    }
+
+    export(){
+        return this.base;
+    }
+
+    setToken(token){
+        if(this.base.headers){
+            this.base.headers.Authorization = token;
+        }
+        else{
+            this.base.headers = {
+                Authorization: token
+            };
+        }
+
+        return this;
+    }
+}
 
 
 class Request{
@@ -544,13 +581,14 @@ async function registerUserAndLogIn({accountId, accountPassword, nickname}){
     };
 }
 
-async function registerMedia({userUuid, token, title, type, description}){
+async function registerMedia({userUuid, token, title, type, description, tagList}){
     let registerMediaRequest = sendRegisterMediaRequest({
         userId: userUuid,
         token: token,
         description: description,
         type: type,
-        title: title        
+        title: title,
+        tagList: tagList        
     });
     let registerMediaResponse = await registerMediaRequest.getResponse();
     let mediaUuid = registerMediaResponse.headers.location;
@@ -624,27 +662,49 @@ class RequestFactory{
     }
 }
 
-async function assertEqualPage(uuidList,  requestFactory){
+async function assertEqualPage(uuidList, requestFactory){
+    await comparePage(uuidList, requestFactory, compareSetEquality);
+}
+
+async function assertEqualOrderPage(uuidList, requestFactory){
+    await comparePage(uuidList, requestFactory, compareOrderEquality);
+}
+
+async function comparePage(uuidList, requestFactory, comparator){
     let assembler = new PageAssembler(requestFactory);
+    let assembledPage = await assembler.assemble();
     let uuidListClone = JSON.parse(JSON.stringify(uuidList));
 
-    let assembledPage = await assembler.assemble();
+    comparator(uuidListClone, assembledPage);
+}
 
-    assert.strictEqual(assembledPage.length, uuidListClone.length);
+function compareSetEquality(uuidList, assembledPage){
+    assert.strictEqual(assembledPage.length, uuidList.length);
     for(let element of assembledPage){
-        let index = uuidListClone.indexOf(element.uuid);
+        let index = uuidList.indexOf(element.uuid);
 
         assert.notStrictEqual(index, -1);
-        uuidListClone.splice(index, 1);
+        uuidList.splice(index, 1);
     }
-    assert.strictEqual(uuidListClone.length, 0);
+    assert.strictEqual(uuidList.length, 0);
+}
+
+function compareOrderEquality(uuidList, assembledPage){
+    assert.strictEqual(assembledPage.length, uuidList.length);
+    for(let i = 0; i < assembledPage.length; i++){
+        assert.strictEqual(assembledPage[i].uuid, uuidList[i]);
+    }
 }
 
 module.exports = {
+    localhostRequestOption,
+
     Request,
+    RequestOptionBuilder,
     PageAssembler,
     RequestFactory,
     assertEqualPage,
+    assertEqualOrderPage,
 
     sendRegisterUserRequest,
     sendLogInRequest,
