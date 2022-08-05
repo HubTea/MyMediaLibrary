@@ -15,38 +15,89 @@ const tagManipulator = require('./tag');
 
 const mediaRouter = express.Router();
 
-/**
- * sort: 'new' | 'old' | 'most_watched'
- */
+
+
+function createDateRandomCursor(obj){
+    let utcMs = obj.createdAt.getTime();
+    let random = obj.random;
+
+    return `${utcMs}_${random}`;
+}
+
+function createViewCountRandomCursor(obj){
+    let viewCount = obj.viewCount;
+    let random = obj.random;
+
+    return `${viewCount}_${random}`;
+}
+
+function mediaToSimpleFormat(media){
+    return {
+        uuid: media.uuid,
+        title: media.title,
+        type: media.type,
+        updateTime: media.updateTime,
+        viewCount: media.viewCount,
+        dislikeCount: media.dislikeCount,
+        uploader: {
+            uuid: media.Uploader.uuid,
+            nickname: media.Uploader.nickname
+        }
+    };
+}
+
+
 mediaRouter.get('/', async function(req, res){
     try{
-        let [date, random] = checker.checkDateRandomCursor(req.query.cursor, '_', pagination.endingDate, 'cursor');
         let length = checker.checkPaginationLength(req.query.length, 'length');
-        let paginator = new pagination.Paginator({
-            length: length,
-            mapper: function(media){
-                return {
-                    uuid: media.uuid,
-                    title: media.title,
-                    type: media.type,
-                    updateTime: media.updateTime,
-                    viewCount: media.viewCount,
-                    dislikeCount: media.dislikeCount,
-                    uploader: {
-                        uuid: media.Uploader.uuid,
-                        nickname: media.Uploader.nickname
-                    }
-                };
-            },
-            cursorLength: function(media){
-                let utcMs = media.createdAt.getTime();
-                let random = media.random;
+        let sort = checker.checkMediaSortOption(req.query.sort, 'sort');
+        let tagList = checker.checkTagList(req.query.tag, 'tag');
+        let mediaList = [];
+        let paginator;
 
-                return `${utcMs}_${random}`;
-            }
-        });
+        if(sort === 'new'){
+            let [date, random] = checker.checkDateRandomCursor(
+                req.query.cursor, '_', pagination.endingDate, 'cursor'
+            );
+            paginator = new pagination.Paginator({
+                length: length,
+                mapper: mediaToSimpleFormat,
+                cursorFactory: createDateRandomCursor
+            }); 
 
-        let mediaList = await mediaListRepository.getMediaList(date, random, paginator.getRequiredLength());
+            mediaList = await mediaListRepository.getDateDescendingMediaList(
+                date, random, tagList, paginator.getRequiredLength()
+            );
+        }
+        else if(sort === 'old'){
+            let [date, random] = checker.checkDateRandomCursor(
+                req.query.cursor, '_', pagination.beginningDate, 'cursor'
+            );
+            paginator = new pagination.Paginator({
+                length: length,
+                mapper: mediaToSimpleFormat,
+                cursorFactory: createDateRandomCursor
+            });
+
+            mediaList = await mediaListRepository.getDateAscendingMediaList(
+                date, random, tagList, paginator.getRequiredLength()
+            );
+        }
+        else if(sort === 'most_watched'){
+            let [viewCount, random] = checker.checkViewCountRandomCursor(
+                req.query.cursor, '_', pagination.maximumViewCount, 'cursor'
+            );
+            paginator = new pagination.Paginator({
+                length: length,
+                mapper: mediaToSimpleFormat,
+                cursorFactory: createViewCountRandomCursor
+            });
+
+            mediaList = await mediaListRepository.getViewCountDescendingMediaList(
+                viewCount, random, tagList, paginator.getRequiredLength()
+            );
+        }
+
         let resBody = paginator.buildResponseBody(mediaList);
 
         res.json(resBody);
@@ -145,12 +196,7 @@ mediaRouter.get('/:mediaUuid/comments', async function(req, res){
                     updatedAt: comment.updatedAt.toISOString()
                 };
             },
-            cursorFactory: function(comment){
-                let utcMs = comment.createdAt.getTime();
-                let random = comment.random;
-
-                return `${utcMs}_${random}`;
-            }
+            cursorFactory: createDateRandomCursor
         });
         let requiredLength = paginator.getRequiredLength();
 

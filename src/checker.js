@@ -103,7 +103,7 @@ function checkTwoIntCursor(cursor, delimiter, parameterName){
         throw new error.IllegalParameter(null, parameterName);
     }
 
-    return splitted;
+    return [parseInt(splitted[0]), parseInt(splitted[1])];
 }
 
 /**
@@ -169,6 +169,15 @@ function checkOrderCursor(cursor, defaultOrder, parameterName){
     }
     else{
         return defaultOrder;
+    }
+}
+
+function checkViewCountRandomCursor(cursor, delimiter, defaultViewCount, parameterName){
+    if(cursor){
+        return checkTwoIntCursor(cursor, delimiter, parameterName);
+    }
+    else{
+        return [defaultViewCount, pagination.minimumRandom];
     }
 }
 
@@ -250,7 +259,12 @@ function checkAccountPassword(password, parameterName){
 
 function checkTagList(tagList, parameterName){
     if(!Array.isArray(tagList)){
-        return [];
+        if(typeof tagList === 'string'){
+            tagList = [tagList];
+        }
+        else{
+            tagList =  [];
+        }
     }
 
     if(tagList.length > 10){
@@ -268,6 +282,16 @@ function checkTagList(tagList, parameterName){
     return tagList;
 }
 
+function checkMediaSortOption(option, parameterName){
+    let allowed = ['new', 'old', 'most_watched'];
+
+    if(allowed.indexOf(option) === -1){
+        throw new error.IllegalParameter(null, parameterName);
+    }
+
+    return option;
+}
+
 module.exports = {
     checkAuthorizationHeader,
     checkUserAuthorization,
@@ -277,9 +301,11 @@ module.exports = {
     checkDateRandomCursor,
     checkDateOrderCursor,
     checkOrderCursor,
+    checkViewCountRandomCursor,
     checkPlaintext,
     checkMimeType,
     checkAccountId,
     checkAccountPassword,
-    checkTagList
+    checkTagList,
+    checkMediaSortOption
 };

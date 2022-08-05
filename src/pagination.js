@@ -11,8 +11,8 @@ const maximumRandom = 2 * (10 ** 9);
 const minimumOrder = 0;
 const maximumOrder = 0x7fffffff;
 
-const MIN = 1;
-const MAX = 2;
+const minimumViewCount = 0;
+const maximumViewCount = 0x7fffffff;
 
 
 class Paginator{
@@ -85,8 +85,8 @@ module.exports = {
     minimumOrder,
     maximumOrder,
 
-    MIN,
-    MAX,
+    minimumViewCount,
+    maximumViewCount,
 
     Paginator
 };
