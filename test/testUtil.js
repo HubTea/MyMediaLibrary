@@ -12,7 +12,7 @@ function defaultQuerySerializer(query){
 }
 
 const localhostRequestOption = {
-    baseURL: 'http://localhost:443/v1/',
+    baseURL: `http://localhost:${serverConfig.port}/v1/`,
     paramsSerializer: defaultQuerySerializer,
     ValidityState: null
 };

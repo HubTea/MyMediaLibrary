@@ -3,7 +3,6 @@ const crypto = require('crypto');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 
-const digest = require('./digest');
 const error = require('./error');
 
 
@@ -23,10 +22,10 @@ let jwtOption = {
 };
 
 const privateKey = crypto.createPrivateKey(
-    fs.readFileSync(process.env.PrivateKeyPath)
+    fs.readFileSync(process.env.PRIVATE_KEY_PATH)
 );
 const publicKey = crypto.createPublicKey(privateKey);
-const hmacKey = fs.readFileSync(process.env.HmacKeyPath);
+const hmacKey = fs.readFileSync(process.env.HMAC_KEY_PATH);
 const key = {
     private: privateKey,
     public: publicKey,
