@@ -191,7 +191,7 @@ class AwsS3MediaEntity extends MediaEntity{
     }
 
     async getDownloadStream(){
-        const mediaContent = await s3Client.client.send(new s3.GetObjectCommand({
+        const mediaContent = await storage.client.send(new s3.GetObjectCommand({
             Bucket: s3Client.bucket,
             Key: this.getPath()
         }));
