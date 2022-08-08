@@ -241,7 +241,7 @@ function wrapStorageError(err){
 
 if(process.env.NODE_ENV === 'production'){
     module.exports = {
-        AwsS3MediaEntity
+        MediaEntity: AwsS3MediaEntity
     };
 }
 else{
