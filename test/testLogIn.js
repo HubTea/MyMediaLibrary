@@ -1,38 +1,65 @@
 const assert = require('assert');
 const jwt = require('jsonwebtoken');
+const uuid = require('uuid');
 
 const testUtil = require('./testUtil');
-
-const serverConfig = require('../src/serverConfig');
+const error = require('../src/error');
 const dbInitializer = require('./dbInitializer');
 
 
-describe('GET /v1/auth 테스트', function(){
+async function testRegisteredUserLogIn({accountId, accountPassword}){
+    let registerUserRequest = testUtil.sendRegisterUserRequest({
+        accountId: accountId,
+        accountPassword: accountPassword,
+        nickname: 'test'
+    });
+    await registerUserRequest.getResponse();
 
+    let logInRequest = testUtil.sendLogInRequest({
+        accountId: accountId,
+        accountPassword: accountPassword
+    });
+    let logInResponse = await logInRequest.getResponse();
+    let logInResponseBody = await logInRequest.getBodyObject();
+
+    assert.strictEqual(logInResponse.statusCode, 200);
+    assert.ok(uuid.validate(logInResponseBody.userUuid));
+    assert.ok(jwt.decode(logInResponseBody.token));
+}
+
+async function testUnregisteredUserLogIn({accountId, accountPassword}){
+    let request = testUtil.sendLogInRequest({
+        accountId: accountId,
+        accountPassword: accountPassword
+    });
+    let response = await request.getResponse();
+    let body = await request.getBodyObject();
+
+    assert.strictEqual(response.statusCode, 400);
+    assert.strictEqual(body.error.code, new error.UserNotExistError().errorCode);
+}
+
+describe('POST /v1/auth 테스트', function(){
     beforeEach(async function(){
         await dbInitializer.initialize({
             logging: false
         });
     });
 
-
     it('등록된 유저 로그인 테스트', async function(){
-        let requestBodyObject = {
+        await testRegisteredUserLogIn({
             accountId: 'testAccount123',
-            accountPassword: 'password#123'
-        };
-        
-        let registUserRequest = testUtil.sendRegistUserRequest({
-            accountId: requestBodyObject.accountId,
-            accountPassword: requestBodyObject.accountPassword,
-            nickname: 'test123'
+            accountPassword: 'passwordpassword'
         });
-        await registUserRequest.getResponse();
-
-        let logInRequest = testUtil.sendLogInRequest(requestBodyObject);
-        let logInResponseBody = await logInRequest.getBodyObject();
-
-        console.log(logInResponseBody);
-        console.log(jwt.decode(logInResponseBody.token));
     });
+
+    it(
+        '등록되지 않은 계정으로 로그인하면 에러 코드를 보내는 지 확인',
+        async function(){
+            await testUnregisteredUserLogIn({
+                accountId: 'unregistered',
+                accountPassword: 'passwordpassword'
+            });
+        }
+    );
 });

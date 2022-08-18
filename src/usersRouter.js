@@ -2,31 +2,54 @@ const express = require('express');
 const crypto = require('crypto');
 const sequelize = require('sequelize');
 
-const serverConfig = require('./serverConfig');
-const error = require('./error');
+const errorHandler = require('./errorHandler');
 const security = require('./securityService');
 const digest = require('./digest');
+const userRepository = require('./repository/userRepository');
+const mediaRepository = require('./repository/mediaRepository');
+const mediaListRepository = require('./repository/mediaListRepository');
+const followingListRepository = require('./repository/followingListRepository');
+const bookmarkRepository = require('./repository/bookmarkRepository');
+const commentRepository = require('./repository/commentRepository');
+const checker = require('./checker');
+const serverConfig = require('./serverConfig');
+const pagination = require('./pagination');
+const tagManipulator = require('./tag');
 
 const router = express.Router();
 
 
 //유저 등록
 router.post('/', async function(req, res){
-    let userObject = await createUserObject({
-        accountId: req.body.accountId,
-        accountPw: req.body.accountPassword,
-        nickname: req.body.nickname
-    });
-    
-    let newUser = await registUser(userObject);
+    try{
+        let accountId = checker.checkAccountId(req.body.accountId, 'accountId');
+        let accountPassword = checker.checkAccountPassword(req.body.accountPassword, 'accountPassword');
+        let nickname = checker.checkPlaintext(req.body.nickname, 'nickname');
+        
+        let userSeed = await createUserSeed({
+            accountId: accountId,
+            accountPw: accountPassword,
+            nickname: nickname
+        });
+        let userEntity = new userRepository.UserEntity();
 
-    res.status(201);
-    res.setHeader('Location', '/v1/users/' + newUser.userId);
-    res.end();
+        let userValueObject = await userEntity.createUser(userSeed);
+
+        res.status(201);
+        res.setHeader('Location', `${userValueObject.uuid}`);
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
-async function createUserObject({accountId, accountPw, nickname}){
-    let digestGenerator = security.digestGenerator;
+async function createUserSeed({accountId, accountPw, nickname}){
+    let digestGenerator = new digest.Pbkdf2DigestGenerator(
+        security.pbkdf2Option.iteration,
+        security.pbkdf2Option.hash,
+        security.digestOption.digestLength
+    );
 
     let randomBytes = crypto.randomBytes(security.digestOption.saltByteLength);
     let salt = new digest.Codec();
@@ -40,104 +63,337 @@ async function createUserObject({accountId, accountPw, nickname}){
     return {
         accountId: accountId,
         nickname: nickname,
-        accountPasswordHash: digestString,
-        accountPasswordSalt: saltString
+        hash: digestString,
+        salt: saltString
     };
 }
 
-async function registUser(userObject){
+
+router.get('/:userUuid/info', async function(req, res){
     try{
-        let newUser = await serverConfig.model.User.create(userObject);
-        return newUser;
-    }
-    catch(userCreationError){
-        handleUserCreationError(userCreationError);
-    }
-}
+        let userUuid = checker.checkUuid(req.params.userUuid);
+        let userEntity = new userRepository.UserEntity();
+        let userValueObject = await userEntity.getUserByUuid(userUuid);
 
-function handleUserCreationError(userCreationError){
-    if(userCreationError instanceof sequelize.UniqueConstraintError){
-        throw new error.UserAlreadyExistError(userCreationError);
+        res.write(JSON.stringify({
+            nickname: userValueObject.nickname || '',
+            introduction: userValueObject.introduction || ''
+        }));
+        res.end();
     }
-    else{
-        throw new error.InternalError(userCreationError);
+    catch(err){
+        errorHandler.handleError(res, err);
     }
-}
-
-
-router.put('/:userId/password', function(req, res){
-
 });
 
 
-router.get('/:userId/info', async function(req, res){
-    let userId = req.userId;
+router.patch('/:userUuid/info', async function(req, res){
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid);
+        let nickname = checker.checkPlaintext(req.body.nickname);
+        let introduction = checker.checkPlaintext(req.body.introduction);
 
-    let user = await serverConfig.model.User.findOne({
-        attributes: ['nickname', 'description', 'thumbnailUrl'],
-        where: {
-            userID: userId
-        }
-    });
+        let authorizer = await checker.checkAuthorizationHeader(req);
 
-    if(user === null){
-        throw new error.UserNotExistError(null);
-    }
+        checker.checkUserAuthorization(authorizer, userUuid);
 
-    res.write(JSON.stringify({
-        nickname: user.nickname,
-        description: user.description,
-        thmbnailUrl: user.thumbnailUrl
-    }));
-    res.end();
-});
+        let userEntity = new userRepository.UserEntity();
+        let user = await userEntity.getUserByUuid(userUuid);
 
-
-router.patch('/:userId/info', async function(req, res){
-    let userId = req.userId;
-    let userInfo = req.body;
-    let nickname = userInfo.nickname;
-    let description = userInfo.description;
-
-    let user = serverConfig.model.User.findOne({
-        where: {
-            userID: userId
-        }
-    });
-
-    if(user === null){
-        throw new error.UserNotExistError(null);
-    }
-
-    user.nickname = nickname;
-    user.description = description;
-
-    await user.save();
-});
-
-
-router.post('/:userId/medias', function(req, res){
-
-});
-
-
-router.get('/:userId/medias', function(req, res){
+        user.nickname = nickname;
+        user.introduction = introduction;
     
+        await userEntity.updateUser(user);
+    
+        res.status(200);
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
 
-router.get('/:userId/subscribers', function(req, res){
+router.post('/:userUuid/medias', async function(req, res){
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let title = checker.checkPlaintext(req.body.title, 'title');
+        let description = checker.checkPlaintext(req.body.description, 'description');
+        let type = checker.checkMimeType(req.body.type, 'type');
+        let tagList = checker.checkTagList(req.body.tagList, 'tag list');
 
+        let authorizer = await checker.checkAuthorizationHeader(req);
+
+        checker.checkUserAuthorization(authorizer, userUuid);
+
+        let userEntity = new userRepository.UserEntity();
+        let userValueObject = await userEntity.getUserByUuid(userUuid);
+
+        let mediaEntity = new mediaRepository.MediaEntity();
+        let mediaValueObject = await mediaEntity.createMetadata({
+            title: title,
+            description: description,
+            type: type,
+            uploaderId: userValueObject.id,
+            tagString: tagManipulator.concatenateTagList(tagList)
+        });
+
+        res.status(201);
+        res.setHeader('Location', `${mediaValueObject.uuid}`);
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
 
-router.get('/:userId/bookmarks', function(req, res){
+router.get('/:userUuid/medias', async function(req, res){
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let length = checker.checkPaginationLength(req.query.length, 'length');
+        let [date, random] = checker.checkDateRandomCursor(req.query.cursor, '_', pagination.endingDate, 'cursor');
 
+        let paginator = new pagination.Paginator({
+            length: length,
+            mapper: function (myUpload){
+                return {
+                    uuid: myUpload.uuid,
+                    title: myUpload.title,
+                    type: myUpload.type,
+                    updateTime: myUpload.updateTime,
+                    viewCount: myUpload.viewCount,
+                    dislikeCount: myUpload.dislikeCount
+                };
+            },
+            cursorFactory: function(myUpload){
+                let nextTime = myUpload.updateTime.getTime();
+                let nextRandom = myUpload.random;
+    
+                return `${nextTime}_${nextRandom}`;
+            }
+        });
+
+        let user = new userRepository.UserEntity();
+        let userValueObject = await user.getUserByUuid(userUuid);
+
+        let myUploadList = await mediaListRepository.getLatestUploadList(
+            userValueObject.id, date, random, paginator.getRequiredLength()
+        );
+
+        let resBody = paginator.buildResponseBody(myUploadList);
+    
+        res.json(resBody);
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
 
-router.get('/:userId/comments', function(req, res){
+router.get('/:userUuid/following', async function(req, res){
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let length = checker.checkPaginationLength(req.query.length, 'length');
+        let order = checker.checkOrderCursor(req.query.cursor, pagination.maximumOrder, 'cursor');
+        let paginator = new pagination.Paginator({
+            length: length,
+            mapper: function(subscribeInfo){
+                let uploader = subscribeInfo.SubscribedUploader;
+                return {
+                    uuid: uploader.uuid,
+                    nickname: uploader.nickname
+                };
+            },
+            cursorFactory: function(subscribeInfo){
+                return subscribeInfo.order.toString();
+            }
+        });
+        let userEntity = new userRepository.UserEntity();
+        let userValueObject = await userEntity.getUserByUuid(userUuid);
+    
+        let uploaderList = await followingListRepository.getFollowingUserDescendingList(
+            userValueObject.id, order, paginator.getRequiredLength()
+        );
+    
+        let resBody = paginator.buildResponseBody(uploaderList);
+    
+        res.set('Content-Type', 'application/json');
+        res.write(JSON.stringify(resBody, null, 5));
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
+});
 
+router.post('/:userUuid/following', async function(req, res){
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let authorizer = await checker.checkAuthorizationHeader(req);
+
+        checker.checkUserAuthorization(authorizer, userUuid);
+
+        let uploaderUuid = checker.checkUuid(req.body.uploaderUuid, 'uploader uuid');
+        
+        let uploaderEntity = new userRepository.UserEntity();
+        let uploaderValueObjectPromise = uploaderEntity.getUserByUuid(uploaderUuid);
+
+        let subscriberEntity = new userRepository.UserEntity();
+        let subscriberValueObjectPromise = subscriberEntity.getUserByUuid(userUuid);
+
+        let uploaderValueObject = await uploaderValueObjectPromise;
+        let subscriberValueObject = await subscriberValueObjectPromise;
+
+        await followingListRepository.createFollowing(uploaderValueObject.id, subscriberValueObject.id);
+        
+        res.status(200).end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
+});
+
+
+router.get('/:userUuid/bookmarks', async function(req, res){
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let length = checker.checkPaginationLength(req.query.length, 'length');
+        let order = checker.checkOrderCursor(req.query.cursor, pagination.maximumOrder, 'order');
+
+        let paginator = new pagination.Paginator({
+            length: length,
+            mapper: function(bookmarkInstance){
+                let collection = bookmarkInstance.Media;
+
+                return {
+                    uuid: collection.uuid,
+                    title: collection.title,
+                    type: collection.type,
+                    updateTime: collection.updateTime,
+                    viewCount: collection.viewCount,
+                    dislikeCount: collection.dislikeCount,
+                    uploader: {
+                        uuid: collection.Uploader.uuid,
+                        nickname: collection.Uploader.nickname
+                    }
+                };
+            },
+            cursorFactory: function(bookmarkInstance){
+                return bookmarkInstance.order.toString();
+            }
+        });
+
+        let userEntity = new userRepository.UserEntity();
+        let userValueObject = await userEntity.getUserByUuid(userUuid);
+
+        let bookmarkList = await bookmarkRepository.getBookmarkList(
+            userValueObject.id, order, paginator.getRequiredLength()
+        );
+
+        let resBody = paginator.buildResponseBody(bookmarkList);
+
+        res.json(resBody);
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
+});
+
+router.post('/:userUuid/bookmarks', async function(req, res){
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let mediaUuid = checker.checkUuid(req.body.mediaUuid, 'media uuid');
+    
+        let authorizer = await checker.checkAuthorizationHeader(req);
+    
+        checker.checkUserAuthorization(authorizer, userUuid);
+    
+        let userEntity = new userRepository.UserEntity();
+        let mediaEntity = mediaRepository.MediaEntity.fromUuid(mediaUuid);
+
+        let userValueObjectPromise = userEntity.getUserByUuid(userUuid);
+        let mediaValueObjectPromise = mediaEntity.getMetadata();
+
+        let userValueObject = await userValueObjectPromise;
+        let mediaValueObject = await mediaValueObjectPromise;
+
+        await bookmarkRepository.createBookmark({
+            userId: userValueObject.id,
+            mediaId: mediaValueObject.id
+        });
+
+        res.status(200).end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
+});
+
+
+router.get('/:userUuid/comments', async function(req, res){
+    try{
+        let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
+        let length = checker.checkPaginationLength(req.query.length, 'length');
+        let [date, random] = checker.checkDateRandomCursor(req.query.cursor, '_', pagination.beginningDate, 'cursor');
+        let parentUuid = req.query.parentUuid;
+        let commentList;
+    
+        let paginator = new pagination.Paginator({
+            length: length,
+            mapper: function(comment){
+                return {
+                    uuid: comment.uuid,
+                    writer: {
+                        uuid: comment.CommentWriter.uuid,
+                        nickname: comment.CommentWriter.nickname
+                    },
+                    media: {
+                        uuid: comment.CommentTarget.uuid,
+                        title: comment.CommentTarget.title
+                    },
+                    content: comment.content,
+                    createdAt: comment.createdAt.toISOString(),
+                    updatedAt: comment.updatedAt.toISOString()
+                };
+            },
+            cursorFactory: function(comment){
+                let utcMs = comment.createdAt.getTime();
+                let random = comment.random;
+    
+                return `${utcMs}_${random}`;
+            }
+        });
+        let requiredLength = paginator.getRequiredLength();
+    
+        if(parentUuid){
+            checker.checkUuid(parentUuid, 'parent uuid');
+    
+            let parentComment = await commentRepository.getCommentByUuid(parentUuid);
+    
+            commentList = await commentRepository.getChildCommentListWithMediaReference(
+                date, random, requiredLength, parentComment.id
+            );
+        }
+        else{
+            let userEntity = new userRepository.UserEntity();
+            let userValueObject = await userEntity.getUserByUuid(userUuid);
+    
+            commentList = await commentRepository.getMyCommentListWithMediaReference(
+                date, random, requiredLength, userValueObject.id
+            );
+        }
+        
+        let resBody = paginator.buildResponseBody(commentList);
+    
+        res.json(resBody);
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
 });
 
 

@@ -2,21 +2,42 @@
 
 ## 목차
 
-## 인증
+# 에러 코드
 
-인증이 필요한 요청에는 Authorization헤더와 다음의 과정으로 획득한 토큰을 함께 보내야 함.  인증이 필요 없는 요청은 문서에 반드시 표시.
-
-권한이 필요한 요청에서 토큰이 없는 경우 응답
+권한이 필요한 요청에서 토큰이 없는 경우 또는 필수적인 파라미터가 없는 경우
 
 ```jsx
-401 Unauthorized
+400 Bad request
+
+{
+	code: "PARAMETER_OMITTED",
+	message: ...
+}
 ```
 
 주어진 토큰의 권한으로는 처리할 수 없는 요청인 경우 응답
 
 ```jsx
 403 Forbidden
+
+{
+	code: "INVALID_TOKEN",
+	message: ...
+}
 ```
+
+파라미터가 제한사항을 위반했을 때
+
+```jsx
+400 BadRequest
+
+{
+		code: "IllegalParameter",
+		message: ...
+}
+```
+
+## 인증
 
 ### 토큰 발행
 
@@ -27,13 +48,13 @@
 GET /v1/auth
 
 {
-	"accountId": string
-		알파벳 대소문자, 숫자로만 구성된 문자열
-
-	"accountPassword": string
-		알파벳 대소문자, 숫자, 특수문자로 구성된 최소 길이
-		12이상 30이하인 문자열
+	accountId: string
+	accountPassword: string
 }
+
+accountId, accountPassword는 알파벳, 숫자, 띄어쓰기만 가능.
+accountId는 최대길이 30
+accountPassword는 최소길이 12, 최대길이 30
 ```
 
 응답
@@ -44,33 +65,19 @@ GET /v1/auth
 200 OK
 
 {
-	"token": string
+	userUuid: string
+	token: string
 }
 ```
 
-accountId가 존재하지 않을 때
+비밀번호가 일치하지 않을 때
 
 ```jsx
-400 Bad Request
+400 Bad request
 
 {
-	"error": {
-		"code": "NotExistAccount"
-		"message": "Account ID does not exist"
-	}
-}
-```
-
-accountPassword가 일치하지 않을 때
-
-```jsx
-400 Bad Request
-
-{
-	"error": {
-		"code": "WrongPassword"
-		"message": "Wrong password inputted"
-	}
+	code: "WRONG_PASSWORD",
+	message: ...
 }
 ```
 
@@ -85,15 +92,12 @@ accountPassword가 일치하지 않을 때
 POST /v1/users
 
 {
-	"accountId": string
-		알파벳 대소문자, 숫자로만 구성된 문자열
-
-	"accountPassword": string
-		알파벳 대소문자, 숫자, 특수문자로 구성된 최소 길이
-		12이상 30이하인 문자열
-
-	"nickname": string
+	accountId: string
+	accountPassword: string
+	nickname: string
 }
+
+nickname은 알파벳, 숫자, 띄어쓰기로만 구성된 최대길이 255의 문자열
 ```
 
 응답
@@ -102,56 +106,7 @@ POST /v1/users
 
 ```jsx
 201 Created
-Location: /v1/users/{userId}
-```
-
-파라미터가 제한사항을 위반했을 때
-
-```jsx
-400 BadRequest
-
-{
-	"error": {
-		"code": "InvalidParameter",
-		"message": "Account ID or password do not meet limit"
-	}
-}
-```
-
-### 계정 비밀번호 변경
-
-요청
-
-```jsx
-PUT /v1/users/{userId}/password
-Authorization: token
-
-{
-	"newAccountPassword": string
-		알파벳 대소문자, 숫자, 특수문자로 구성된 최소 길이
-		12이상 30이하인 문자열
-}
-```
-
-응답
-
-성공시
-
-```jsx
-200 OK
-```
-
-파라미터가 제한사항을 위반했을 때
-
-```jsx
-400 BadRequest
-
-{
-	"error": {
-		"code": "InvalidParameter",
-		"message": "Account ID or password do not meet limit"
-	}
-}
+Location: 새로 생성된 유저의 uuid
 ```
 
 ### 사용자 정보 조회
@@ -162,7 +117,7 @@ Authorization: token
 
 ```jsx
 //인증x
-GET /v1/users/{userId}/info
+GET /v1/users/{userUuid}/info
 ```
 
 응답
@@ -173,10 +128,8 @@ GET /v1/users/{userId}/info
 200 OK
 
 {
-	"nickname": string
-	"description": string
-	"thumbnailUrl": string
-		썸네일 이미지 파일 URL
+	nickname: string
+	introduction: string
 }
 ```
 
@@ -187,13 +140,15 @@ GET /v1/users/{userId}/info
 요청
 
 ```jsx
-PATCH /v1/users/{userId}/info
+PATCH /v1/users/{userUuid}/info
 Authorization: token
 
 {
-	"nickname": string
-	"description": string
+	nickname: string
+	introduction: string
 }
+
+introduction의 제한사항은 nickname과 동일
 ```
 
 응답
@@ -204,53 +159,23 @@ Authorization: token
 200 OK
 ```
 
-썸네일 변경
+### 미디어 정보 등록
 
 요청
 
 ```jsx
-PATCH /v1/users/{userId}/thumbnail
-Authorization: token
-Content-Type: image/jpeg
-
-thumbnail image file
-```
-
-응답
-
-성공시
-
-```jsx
-200 OK
-Location: thumbnail url
-```
-
-### 미디어 업로드
-
-요청
-
-```jsx
-POST /v1/users/{userId}/medias
+POST /v1/users/{userUuid}/medias
 Authorization: token
 
 {
-	"title": string
-	"description": string
-	"thumbnail": string
-		썸네일 이미지 파일을 base64로 표현한 문자열
-
-	"media": [
-		{
-			"type": string
-				해당 미디어의 종류.
-				"img", "video"중 하나
-
-			"file": string
-				파일을 base64로 표현한 문자열
-		},
-		...
-	]
+	title: string
+	description: string,
+	type: string
 }
+
+title, description은 알파벳, 숫자, 띄어쓰기로 구성된
+최대길이 255의 문자열.
+type은 'image/png', 'image/jpeg', 'video/mp4' 중 하나.
 ```
 
 응답
@@ -258,36 +183,27 @@ Authorization: token
 성공시
 
 ```jsx
-200 OK
-Location: /v1/medias/{mediaId}
+201 Created
+Location: 새로 생성된 미디어의 uuid
 ```
 
-파일이 너무 클 때
-
-```jsx
-413 Payload Too Large
-```
-
-### 업로드한 미디어 목록
+### 업로드한 미디어 목록 조회
 
 요청
 
 ```jsx
 //인증x
-GET /v1/users/{userId}/medias
+GET /v1/users/{userUuid}/medias
 
 {
-	"range": {
-		"cursor": string
-			클라이언트가 지금까지 응답받은 항목 중 마지막 것의 정렬키
-			생략하면 목록의 맨 앞을 요청한 것으로 간주
-
-		"limit": integer
-			응답받을 항목의 최대 개수
-
-		"sorting": string
-	}
+	length: number | undefined,
+	cursor: string | undefined
 }
+
+length는 1 이상 100 이하인 정수. 생략됐을 때 기본값은 50
+cursor는 반환받을 목록의 제일 첫번째 요소를 가리키는 
+정수_정수 형식의 문자열. 생략됐을 때에는 전체 목록의 첫번째
+요소를 가리키는 값이 지정됨.
 ```
 
 응답
@@ -296,40 +212,31 @@ GET /v1/users/{userId}/medias
 200 OK
 
 {
-	"uploadList": array
-		미디어의 mediaID 배열
-
-	"realRange": {
-		"cursor": string
-			응답으로 보낸 항목 중 마지막 것의 정렬키
-
-		"limit": integer
-			응답으로 보낸 항목의 개수
-
-		"sorting": string
-	}
+	cursor: string,
+	list: Array<{
+			uuid: string,
+			title: string,
+			type: string,
+			updateTime: string,
+			viewCount: number,
+			dislikeCount: number
+	}>
 }
+
+cursor: 다음 목록을 조회할 때 요청의 cursor 파라미터데 사용해야 하는 값.
+uuid: 미디어의 uuid.
 ```
 
-### 구독 목록
+### 구독 목록 조회
 
 요청
 
 ```jsx
-//인증x
-GET /v1/users/{userId}/subscribes
+GET /v1/users/{userUuid}/following
 
 {
-	"range": {
-		"cursor": string
-			클라이언트가 지금까지 응답받은 항목 중 마지막 것의 정렬키
-			생략하면 목록의 맨 앞을 요청한 것으로 간주
-
-		"limit": integer
-			응답받을 항목의 최대 개수
-
-		"sorting": string
-	}
+	cursor: string | undefined,
+	length: number | undefined
 }
 ```
 
@@ -341,19 +248,37 @@ GET /v1/users/{userId}/subscribes
 200 OK
 
 {
-	"subscribeList": array
-		구독한 사용자의 userID 배열
-	
-	"realRange": {
-		"cursor": string
-			응답으로 보낸 항목 중 마지막 것의 정렬키
-
-		"limit": integer
-			응답으로 보낸 항목의 개수
-
-		"sorting": string
-	}
+	cursor: string,
+	list: Array<{
+		uuid: string,
+		nickname: string
+	}>
 }
+
+uuid: 구독중인 유저의 uuid
+```
+
+### 유저 구독
+
+요청
+
+```jsx
+POST /v1/users/{userUuid}/following
+Authorization: token
+
+{
+	"uploaderUuid": string
+}
+
+uploaderUuid: 구독할 유저의 uuid
+```
+
+응답
+
+성공시
+
+```jsx
+200 OK
 ```
 
 ### 북마크 목록
@@ -362,19 +287,11 @@ GET /v1/users/{userId}/subscribes
 
 ```jsx
 //인증x
-GET /v1/users/{userId}/bookmarks
+GET /v1/users/{userUuid}/bookmarks
 
 {
-	"range": {
-		"cursor": string
-			클라이언트가 지금까지 응답받은 항목 중 마지막 것의 정렬키
-			생략하면 목록의 맨 앞을 요청한 것으로 간주
-
-		"limit": integer
-			응답받을 항목의 최대 개수
-
-		"sorting": string
-	}
+	cursor: string | undefined,
+	length: number | undefined
 }
 ```
 
@@ -384,19 +301,43 @@ GET /v1/users/{userId}/bookmarks
 200 OK
 
 {
-	"bookmarkList": array
-		북마크한 미디어의 mediaID 배열
-	
-	"realRange": {
-		"cursor": string
-			응답으로 보낸 항목 중 마지막 것의 정렬키
-
-		"limit": integer
-			응답으로 보낸 항목의 개수
-
-		"sorting": string
-	}
+	cursor: string,
+	list: Array<{
+		uuid: string,
+		title: string,
+		type: string,
+		updateTime: stirng,
+		viewCount: number,
+		dislikeCount: number,
+		uploader: {
+			uuid: string,
+			nickname: string
+		}
+	}>
 }
+```
+
+### 북마크 추가
+
+요청
+
+```jsx
+POST /v1/users/{userUuid}/bookmarks
+Authorization: token
+
+{
+	mediaUuid: string
+}
+
+mediaUuid: 구독할 미디어의 uuid
+```
+
+응답
+
+성공시
+
+```jsx
+200 Ok
 ```
 
 ### 작성한 댓글 목록
@@ -405,20 +346,15 @@ GET /v1/users/{userId}/bookmarks
 
 ```jsx
 //인증x
-GET /v1/users/{userId}/comments
+GET /v1/users/{userUuid}/comments
 
 {
-	"range": {
-		"cursor": string
-			클라이언트가 지금까지 응답받은 항목 중 마지막 것의 정렬키
-			생략하면 목록의 맨 앞을 요청한 것으로 간주
-
-		"limit": integer
-			응답받을 항목의 최대 개수
-
-		"sorting": string
-	}
+	cursor: string | undefined,
+	length: number | undefined,
+	parentUuid: string | undefined
 }
+
+parentUuid: 댓글에 대한 답글 목록을 조회할 때의 부모 댓글 uuid.
 ```
 
 응답
@@ -429,30 +365,48 @@ GET /v1/users/{userId}/comments
 200 OK
 
 {
-	"commentList": array
-		comment의 commentId 배열
-
-	"realRange": {
-		"cursor": string
-			응답으로 보낸 항목 중 마지막 것의 정렬키
-
-		"limit": integer
-			응답으로 보낸 항목의 개수
-
-		"sorting": string
-	}
+	cursor: string,
+	list: Array<{
+		uuid: string,
+		writer: {
+			uuid: string,
+			nickname: string,
+		},
+		media: {
+			uuid: string,
+			nickname: string
+		},
+		content: string,
+		createdAt: string,
+		updatedAt: string
+	}>
 }
+
+content: 댓글 내용
+
 ```
 
 ## 미디어
 
-### 미디어 접근
+### 미디어 파일 업로드
+
+요청
+
+```jsx
+POST /v1/medias/{mediaUuid}
+Authorization: token
+Content-Type: video/mp4 | image/jpeg | image/png
+
+file content
+```
+
+### 미디어 파일 다운로드
 
 요청
 
 ```jsx
 //인증x
-GET /v1/medias/{mediaId}
+GET /v1/medias/{mediaUuid}
 ```
 
 응답
@@ -462,17 +416,35 @@ GET /v1/medias/{mediaId}
 ```jsx
 200 OK
 
-{
-	"media": [
-		{
-			"type": string
-				미디어 종류
+file content
+```
 
-			"fileUrl": string
-				파일의 실제 URL
-		},
-		...
-	]
+### 미디어 정보 조회
+
+요청
+
+```jsx
+GET /v1/medias/{mediaUuid}/info
+```
+
+응답
+
+성공시
+
+```jsx
+200 Ok
+
+{
+	title: string,
+	description: string,
+	type: string,
+	updateTime: string,
+	viewCount: number,
+	dislikeCount: number,
+	uploader: {
+		uuid: string,
+		nickname: string
+	}
 }
 ```
 
@@ -483,22 +455,6 @@ GET /v1/medias/{mediaId}
 ```jsx
 //인증x
 GET /v1/medias
-
-{
-	"query": string
-		검색할 태그들을 담고있는 문자열
-	
-	"range": {
-		"cursor": string
-			클라이언트가 지금까지 응답받은 항목 중 마지막 것의 정렬키
-			생략하면 목록의 맨 앞을 요청한 것으로 간주
-
-		"limit": integer
-			응답받을 항목의 최대 개수
-
-		"sorting": string
-	}
-}
 ```
 
 응답
@@ -509,19 +465,19 @@ GET /v1/medias
 200 OK
 
 {
-	"searchResult": array
-		미디어의 URL 배열
-		/v1/medias/{mediaId}
-
-	"realRange": {
-		"cursor": string
-			응답으로 보낸 항목 중 마지막 것의 정렬키
-
-		"limit": integer
-			응답으로 보낸 항목의 개수
-
-		"sorting": string
-	}
+	cursor: string,
+	list: Array<{
+		uuid: string,
+		title: string,
+		type: string,
+		updateTime: string,
+		viewCount: number,
+		dislikeCount: number,
+		uploader: {
+			uuid: string,
+			nickname: string
+		}
+	}>
 }
 ```
 
@@ -531,19 +487,12 @@ GET /v1/medias
 
 ```jsx
 //인증x
-GET /v1/medias/{mediaId}/comments
+GET /v1/medias/{mediaUuid}/comments
 
 {
-	"range": {
-		"cursor": string
-			클라이언트가 지금까지 응답받은 항목 중 마지막 것의 정렬키
-			생략하면 목록의 맨 앞을 요청한 것으로 간주
-
-		"limit": integer
-			응답받을 항목의 최대 개수
-
-		"sorting": string
-	}
+	cursor: string | undefined,
+	length: number | undefined,
+	parentUuid: string | undefined
 }
 ```
 
@@ -553,22 +502,39 @@ GET /v1/medias/{mediaId}/comments
 200 OK
 
 {
-	"commentList": [
-		{
-			"commentId": string
-			"parentComment": string
+	cursor: string,
+	list: Array<{
+		uuid: string,
+		writer: {
+			uuid: string,
+			nickname: string
 		},
-		...
-	]
-	
-	"realRange": {
-		"cursor": string
-			응답으로 보낸 항목 중 마지막 것의 정렬키
-
-		"limit": integer
-			응답으로 보낸 항목의 개수
-
-		"sorting": string
-	}
+		content: string,
+		createdAt: string,
+		updatedAt: string
+	}>
 }
+```
+
+### 미디어에 댓글 달기
+
+요청
+
+```jsx
+POST /v1/medias/{mediaUuid}/comments
+
+{
+	writerUuid: string,
+	content: string,
+	parentUuid: string | undefined
+}
+```
+
+응답
+
+성공시
+
+```jsx
+201 Created
+Location: 생성된 댓글의 uuid
 ```

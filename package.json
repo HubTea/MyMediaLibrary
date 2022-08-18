@@ -1,0 +1,22 @@
+{
+    "dependencies": {
+        "@aws-sdk/client-s3": "^3.129.0",
+        "@aws-sdk/credential-providers": "^3.128.0",
+        "@aws-sdk/lib-storage": "^3.131.0",
+        "express": "^4.17.2",
+        "jsonwebtoken": "^8.5.1",
+        "pg": "^8.7.3",
+        "pg-hstore": "^2.3.4",
+        "sequelize": "^6.17.0",
+        "winston": "^3.8.1"
+    },
+    "scripts": {
+        "start": "node ./src/main.js",
+        "test": "mocha"
+    },
+    "devDependencies": {
+        "axios": "^0.27.2",
+        "mocha": "^9.2.2",
+        "qs": "^6.11.0"
+    }
+}

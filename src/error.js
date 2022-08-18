@@ -1,3 +1,4 @@
+const sequelize = require('sequelize');
 
 
 class ErrorResponse extends Error{
@@ -6,6 +7,10 @@ class ErrorResponse extends Error{
         this.httpStatusCode = httpStatusCode;
         this.errorCode = errorCode;
         this.underlyingError = underlyingError;
+    }
+
+    evaluateMessage(){
+
     }
 }
 
@@ -19,7 +24,7 @@ class JwtSignFailedError extends ErrorResponse{
 
 class InvalidJwtError extends ErrorResponse{
     constructor(underlyingError){
-        super(400, 'INVALID_TOKEN', underlyingError);
+        super(403, 'INVALID_TOKEN', underlyingError);
     }
 }
 
@@ -45,16 +50,63 @@ class UserAlreadyExistError extends ErrorResponse{
 }
 
 
-class IllegalAccountPasswordError extends ErrorResponse{
+class OmittedParameterError extends ErrorResponse{
     constructor(underlyingError){
-        super(400, 'ILLEGAL_ACCOUNT_PASSWORD', underlyingError);
+        super(400, 'PARAMETER_OMITTED', underlyingError);
+
+        this.parameter = [];
+    }
+
+    appendParameter(name){
+        this.parameter.push(name);
+        this.evaluateMessage();
+    }
+
+    evaluateMessage(){
+        this.message = `생략된 파라미터: ${this.parameter.toString()}`;
     }
 }
 
 
-class IllegalAccountIdError extends ErrorResponse{
+class IllegalParameter extends ErrorResponse{
+    constructor(underlyingError, parameterName){
+        super(400, 'IllegalParameter', underlyingError);
+
+        this.parameterName = parameterName;
+        this.evaluateMessage();
+    }
+
+    evaluateMessage(){
+        this.message = `Parameter: ${this.parameterName}`;
+    }
+}
+
+
+class NotFoundError extends ErrorResponse{
     constructor(underlyingError){
-        super(400, 'ILLEGAL_ACCOUNT_ID', underlyingError);
+        super(404, 'NOT_FOUND', underlyingError);
+    }
+}
+
+
+class DatabaseError extends ErrorResponse{
+    constructor(underlyingError){
+        super(500, 'QUERY_FAILED_ERROR', underlyingError);
+    }
+
+}
+
+
+class FileStorageError extends ErrorResponse{
+    constructor(underlyingError){
+        super(500, 'STORAGE_ERROR', underlyingError);
+    }
+}
+
+
+class NotPreparedError extends ErrorResponse{
+    constructor(){
+        super(500, 'NOT_PREPARED', null);
     }
 }
 
@@ -73,6 +125,15 @@ class UnexpectedError extends ErrorResponse{
 }
 
 
+function wrapSequelizeError(err){
+    if(err instanceof sequelize.BaseError){
+        return new DatabaseError(err);
+    }
+    else{
+        return err;
+    }
+}
+
 module.exports = {
     ErrorResponse,
     JwtSignFailedError,
@@ -80,8 +141,14 @@ module.exports = {
     PasswordNotMatchError,
     UserNotExistError,
     UserAlreadyExistError,
-    IllegalAccountIdError,
-    IllegalAccountPasswordError,
+    IllegalParameter,
+    DatabaseError,
+    OmittedParameterError,
     InternalError,
-    UnexpectedError
+    UnexpectedError,
+    NotFoundError,
+    FileStorageError,
+    NotPreparedError,
+
+    wrapSequelizeError
 };

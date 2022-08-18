@@ -24,7 +24,7 @@ class Authorizer{
      */
     constructor(token){
         if(typeof(token) == 'string'){
-            this.token = JSON.stringify(token);
+            this.token = JSON.parse(token);
         }
         else{
             this.token = token;
@@ -45,7 +45,7 @@ class Authorizer{
      * @returns {boolean} userId에 해당하는 유저의 데이터에 접근 가능하면 true.
      */
     testUserAccessibility(userId){
-        return (this.token.user.userId === userId);
+        return (this.token.user && this.token.user.userId === userId);
     }
     
     /**

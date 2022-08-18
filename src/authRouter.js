@@ -1,103 +1,61 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 
 const auth = require('./authorizer');
-const serverConfig = require('./serverConfig');
 const error = require('./error');
+const errorHandler = require('./errorHandler');
 const digest = require('./digest');
 const security = require('./securityService');
+const userRepository = require('./repository/userRepository');
+const checker = require('./checker');
 
 
 const router = express.Router();
 
 
 //로그인
-router.get('/', async function(req, res){
-    let user;
+router.post('/', async function(req, res){
     try{
-        user = await serverConfig.model.User.findOne({
-            attributes: ['userId'],
-            where: {
-                accountId: req.body.accountId
-            }
-        });
-    }
-    catch(err){
-        throw new error.InternalError(err);
-    }
+        let accountId = checker.checkAccountId(req.body.accountId, 'accountId');
+        let accountPassword = checker.checkAccountPassword(req.body.accountPassword, 'accountPassword');
+        let userEntity = new userRepository.UserEntity();
+        let user = await userEntity.getUserByAccountId(accountId);
 
-    if(user === null){
-        throw error.UserNotExistError(null);
-    }
-
-    const digestGenerator = security.digestGenerator;
-    const digestPair = new digest.DatabaseDigestPair(req.body.accountId, digestGenerator);
+        const digestGenerator = new digest.Pbkdf2DigestGenerator(
+            security.pbkdf2Option.iteration,
+            security.pbkdf2Option.hash,
+            security.digestOption.digestLength
+        );
+        const digestPair = new digest.DatabaseDigestPair(accountId, digestGenerator);
+        
+        if(await digestPair.isEqual(accountPassword) === false){
+            throw new error.PasswordNotMatchError(null);
+        }
     
-    await replyAuth(req, res, digestPair, digestGenerator, user);
-});
-
-
-/**
- * 유저를 인증하고 Authorizer 객체를 생성하여 응답으로 보냄.
- * @param {*} req 
- * @param {*} res 
- * @param {DigestPair} digestPair 
- * @param {DigestGenerator} digestGenerator 
- * @param {User} userPromise 
- */
-async function replyAuth(req, res, digestPair, userPromise){
-    //인증
-    if(await digestPair.isEqual(req.body.accountPassword) === false){
-        throw new error.PasswordNotMatchError(null);
-    }
-
-    //권한 부여
-    const authorizer = new auth.Authorizer({});
-    const user = await userPromise;
-
-    authorizer.setAccessibleUser(user.userId);
-
-    await sendAuthorizer(res, authorizer);
-}
-
-
-/**
- * Authorizer 객체를 담은 jwt를 생성하여 응답으로 보냄.
- * @param {*} res 
- * @param {Authorizer} authorizer 
- * @returns {Promise<void>}
- */
-function sendAuthorizer(res, authorizer){
-    return new Promise(function(resolve, reject){
+        const authorizer = new auth.Authorizer({});
+    
+        authorizer.setAccessibleUser(user.uuid);
+    
+        let jwtGenerator = new security.JwtGenerator();
         let payload = {
             authorizer: authorizer.export()
         };
-        let privateKey = security.key.private.export({
-            type: 'pkcs1',
-            format: 'pem'
-        });
-        let options = {
-            expiresIn: '7d'
+        let key = security.key.hmac;
+        let option = {
+            algorithm: security.jwtOption.algorithm,
+            expiresIn: security.jwtOption.expiresIn
         };
+        let token = await jwtGenerator.generate(payload, key, option);
 
-
-        jwt.sign(payload, privateKey, options,
-            function(err, token){
-                if(err){
-                    reject(new error.JwtSignFailedError(err));
-                    return;
-                }
-
-                res.write(JSON.stringify({
-                    token
-                }));
-                res.end();
-                resolve();
-            }
-        );
-    });
-}
-
+        res.write(JSON.stringify({
+            userUuid: user.uuid,
+            token: token
+        }));
+        res.end();
+    }
+    catch(err){
+        errorHandler.handleError(res, err);
+    }
+});
 
 module.exports = {
     router
