@@ -9,7 +9,7 @@ function handleError(res, err){
     
     let level = 'info';
 
-    if(err.httpStatusCode % 100 === 5){
+    if(err.httpStatusCode >= 500){
         level = 'error';
     }
 

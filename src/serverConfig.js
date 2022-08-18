@@ -42,10 +42,9 @@ if(process.env.NODE_ENV === 'production'){
     logger = winston.createLogger({
         level: 'error',
         format: winston.format.combine(
-            winston.format.json(),
             winston.format.timestamp()
         ),
-        transPorts: [
+        transports: [
             errorFile
         ],
         rejectionHandlers: [
