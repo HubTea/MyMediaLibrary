@@ -42,6 +42,7 @@ if(process.env.NODE_ENV === 'production'){
     logger = winston.createLogger({
         level: 'error',
         format: winston.format.combine(
+            winston.format.json(),
             winston.format.timestamp()
         ),
         transports: [
@@ -59,6 +60,7 @@ else{
     logger = winston.createLogger({
         level: 'info',
         format: winston.format.combine(
+            winston.format.json(),
             winston.format.prettyPrint(),
             winston.format.timestamp()
         ),
