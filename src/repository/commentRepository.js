@@ -66,7 +66,7 @@ async function getChildCommentListWithMediaReference(date, random, length, paren
 async function getMyCommentListWithMediaReference(date, random, length, writerId){
     let option = generateDefaultOption(date, random, length);
 
-    option.writerId = writerId;
+    option.where.writerId = writerId;
     option.include.push({
         model: serverConfig.model.Media,
         as: 'CommentTarget',
