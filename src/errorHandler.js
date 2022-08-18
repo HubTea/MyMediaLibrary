@@ -1,4 +1,5 @@
 const error = require('./error');
+const serverConfig = require('./serverConfig');
 
 
 function handleError(res, err){
@@ -6,19 +7,22 @@ function handleError(res, err){
         err = new error.UnexpectedError(err);
     }
     
-    let recursiveError = err;
+    let level = 'info';
 
-    while(recursiveError){
-        console.error(`error code: ${recursiveError.errorCode}`);
-        console.error(`message: ${recursiveError.message}`);
-        console.error(`stack: ${recursiveError.stack}`);
-        console.error(recursiveError.underlyingError);
-
-        recursiveError = recursiveError.underlyingError;
+    if(err.httpStatusCode % 100 === 5){
+        level = 'error';
     }
-    
-    
 
+    serverConfig.logger.log({
+        level: level, 
+        message: JSON.stringify({
+            errorCode: err.errorCode,
+            message: err.message,
+            stack: err.stack,
+            underlyingError: err.underlyingError
+        })
+    });
+    
     res.status(err.httpStatusCode);
     res.write(JSON.stringify({
         error: {

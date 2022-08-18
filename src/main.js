@@ -22,7 +22,10 @@ app.use(function(req, res, next){
     next();
 });
 app.use(function(req, res, next){
-    console.log('request: ' + req.method + ' ' + req.originalUrl);
+    serverConfig.logger.log({
+        level: 'info', 
+        message: `request: ${req.method} ${req.originalUrl}`
+    });
     next();
 });
 app.use(express.json());
