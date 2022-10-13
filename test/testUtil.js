@@ -1,6 +1,7 @@
 const http = require('http');
 const assert = require('assert');
 const qs = require('qs');
+const axios = require('axios');
 
 const serverConfig = require('../src/serverConfig');
 const { Controller } = require('../controller/controller');
@@ -132,6 +133,20 @@ function compareOrderEquality(uuidList, assembledPage){
     }
 }
 
+async function createSignedControllerList(config, userList){
+    let client = axios.create(config);
+    let controllerList = [];
+
+    for(let user of userList){
+        let controller = new Controller(client);
+
+        await controller.registerUser(user);
+        await controller.logIn(user.accountId, user.accountPassword);
+        controllerList.push(controller);
+    }
+    return controllerList;
+}
+
 module.exports = {
     localhostRequestOption,
 
@@ -140,4 +155,6 @@ module.exports = {
     PageGenerator,
     assertEqualPage,
     assertEqualOrderPage,
+    
+    createSignedControllerList
 };
