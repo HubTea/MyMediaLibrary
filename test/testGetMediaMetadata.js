@@ -9,36 +9,31 @@ async function testGetMediaMetadata({title, description, type, tagList}){
     let tempPassword = 'passwordpassword';
     let tempNickname = 'tempNickname';
 
-    let { userId, token } = await testUtil.registerUserAndLogIn({
-        accountId: tempAccount,
-        accountPassword: tempPassword,
-        nickname: tempNickname
-    });
+    let [user] = await testUtil.createSignedControllerList(
+        testUtil.localhostRequestOption,
+        [{
+            accountId: tempAccount,
+            accountPassword: tempPassword,
+            nickname: tempNickname
+        }]
+    );
 
-    let registerMediaRequest = testUtil.sendRegisterMediaRequest({
-        userId: userId,
-        token: token,
+    let mediaUuid = await user.registerMedia({
         description: description,
         type: type,
         title: title,
-        tagList: tagList    
+        tagList: tagList 
     });
-    let registerMediaResponse = await registerMediaRequest.getResponse();
-    let mediaUuid = registerMediaResponse.headers.location;
 
-    let getMediaMetadataRequest = testUtil.sendGetMediaMetadataRequest({
-        mediaId: mediaUuid
-    });
-    let getMediaMetadataResponse = await getMediaMetadataRequest.getResponse();
-    let metadata = await getMediaMetadataRequest.getBodyObject();
+    let metadata = await user.getMediaInfo(mediaUuid);
 
-    assert.strictEqual(getMediaMetadataResponse.statusCode, 200);
+    assert.strictEqual(user.recentResponse.status, 200);
     assert.strictEqual(metadata.title, title);
     assert.strictEqual(metadata.description, description);
     assert.strictEqual(metadata.type, type);
     assert.strictEqual(metadata.viewCount, 1);
     assert.strictEqual(metadata.dislikeCount, 0);
-    assert.strictEqual(metadata.uploader.uuid, userId);
+    assert.strictEqual(metadata.uploader.uuid, user.session.userUuid);
     assert.strictEqual(metadata.uploader.nickname, tempNickname);
 
     if(Array.isArray(tagList)){
