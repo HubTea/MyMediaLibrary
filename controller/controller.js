@@ -7,20 +7,21 @@
         this.client = client;
         this.request = new Request(this.client);
         this.session = session;
+        this.recentResponse = null;
     }
 
     async registerUser({accountId, accountPassword, nickname}){
-        let response = await this.request.postUserRegistration({
+        this.recentResponse = await this.request.postUserRegistration({
             accountId: accountId,
             accountPassword: accountPassword,
             nickname: nickname
         });
 
-        return response.headers.location;
+        return this.recentResponse.headers.location;
     }
 
     async logIn(accountId, accountPassword){
-        let response = await this.request.postLogIn({
+        let response = this.recentResponse = await this.request.postLogIn({
             accountId: accountId,
             accountPassword: accountPassword
         });
@@ -35,13 +36,13 @@
     }
 
     async getUserInfo(userUuid){
-        let response = await this.request.fetchUserInfo(userUuid);
+        let response = this.recentResponse = await this.request.fetchUserInfo(userUuid);
 
         return response.data;
     }
 
     async changeMyInfo({nickname, introduction}){
-        await this.request.patchMyInfo({
+        this.recentResponse = await this.request.patchMyInfo({
             userUuid: this.session.userUuid,
             token: this.session.token,
             body: {
@@ -52,7 +53,7 @@
     }
 
     async registerMedia({title, description, type, tagList}){
-        let response = await this.request.postMediaRegistration({
+        let response = this.recentResponse = await this.request.postMediaRegistration({
             userUuid: this.session.userUuid,
             token: this.session.token,
             body: {
@@ -67,13 +68,13 @@
     }
 
     async getMediaInfo(mediaUuid){
-        let response = await this.request.fetchMediaInfo(mediaUuid);
+        let response = this.recentResponse = await this.request.fetchMediaInfo(mediaUuid);
 
         return response.data;
     }
 
     async uploadMedia(mediaUuid, file){
-        await this.request.postMediaFile({
+        this.recentResponse = await this.request.postMediaFile({
             mediaUuid: mediaUuid,
             token: this.session.token,
             body: file
@@ -81,13 +82,13 @@
     }
 
     async downloadMedia(mediaUuid){
-        let response = await this.request.fetchMediaFile(mediaUuid);
+        let response = this.recentResponse = await this.request.fetchMediaFile(mediaUuid);
 
         return response.data;
     }
 
     async comment({mediaUuid, content, parentCommentUuid}){
-        let response = await this.request.postComment({
+        let response = this.recentResponse = await this.request.postComment({
             mediaUuid: mediaUuid,
             token: this.session.token,
             body: {
@@ -101,7 +102,7 @@
     }
 
     async subscribe(uploaderUuid){
-        await this.request.postSubscription({
+        this.recentResponse = await this.request.postSubscription({
             userUuid: this.session.userUuid,
             token: this.session.token,
             body: {
@@ -111,7 +112,7 @@
     }
 
     async addBookmark(mediaUuid){
-        await this.request.postBookmark({
+        this.recentResponse = await this.request.postBookmark({
             userUuid: this.session.userUuid,
             token: this.session.token,
             body: {
@@ -121,7 +122,7 @@
     }
 
     async getMySubscriptionList(cursor, length){
-        let response = await this.request.fetchMySubscriptionList({
+        let response = this.recentResponse = await this.request.fetchMySubscriptionList({
             userUuid: this.session.userUuid,
             length: length,
             cursor: cursor
@@ -131,7 +132,7 @@
     }
 
     async getMyMediaList(cursor, length){
-        let response = await this.request.fetchMyMediaList({
+        let response = this.recentResponse = await this.request.fetchMyMediaList({
             userUuid: this.session.userUuid,
             length: length,
             cursor: cursor
@@ -141,7 +142,7 @@
     }
 
     async getMyBookmarkList(cursor, length){
-        let response = await this.request.fetchMyBookmarkList({
+        let response = this.recentResponse = await this.request.fetchMyBookmarkList({
             userUuid: this.session.userUuid,
             length: length,
             cursor: cursor
@@ -151,7 +152,7 @@
     }
 
     async getMyCommentList({cursor, length, parentCommentUuid} = {}){
-        let response = await this.request.fetchMyCommentList({
+        let response = this.recentResponse = await this.request.fetchMyCommentList({
             userUuid: this.session.userUuid,
             cursor: cursor,
             length: length,
@@ -162,7 +163,7 @@
     }
 
     async getMediaCommentList({mediaUuid, cursor, length, parentCommentUuid}){
-        let response = await this.request.fetchMediaCommentList({
+        let response = this.recentResponse = await this.request.fetchMediaCommentList({
             mediaUuid: mediaUuid,
             cursor: cursor,
             length: length,
@@ -173,7 +174,7 @@
     }
 
     async searchMedia({tagList, sort, cursor, length}){
-        let response = await this.request.fetchMediaList({
+        let response = this.recentResponse = await this.request.fetchMediaList({
             tagList: tagList,
             sort: sort,
             cursor: cursor,
