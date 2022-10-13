@@ -8,34 +8,24 @@ async function testGetUserMetadata({accountId, nickname, introduction}){
     let tempPassword = 'passwordpassword';
     let tempNickname = 'tempNickname';
 
-    let { userId, token } = await testUtil.registerUserAndLogIn({
-        accountId: accountId,
-        accountPassword: tempPassword,
-        nickname: tempNickname
-    });
+    let [user] = await testUtil.createSignedControllerList(
+        testUtil.localhostRequestOption, [{
+            accountId: accountId,
+            accountPassword: tempPassword,
+            nickname: tempNickname
+        }]
+    );
 
-    console.log(`userId: ${userId}`);
-
-    let patchUserMetadataRequest = testUtil.sendPatchUserMetadataRequest({
-        userId: userId,
-        token: token,
+    await user.changeMyInfo({
         nickname: nickname,
         introduction: introduction
     });
-    await patchUserMetadataRequest.getResponse();
 
-    let getUserMetadataRequest = testUtil.sendGetUserMetadataRequest({
-        userId: userId
-    });
-    let response = await getUserMetadataRequest.getResponse();
-    let body = await getUserMetadataRequest.getBodyObject();
+    let myInfo = await user.getMyInfo();
 
-    assert.strictEqual(response.statusCode, 200);
-
-    assert.strictEqual(body.nickname, nickname);
-    assert.strictEqual(body.introduction, introduction);
-
-    console.log(body);
+    assert.strictEqual(user.recentResponse.status, 200);
+    assert.strictEqual(myInfo.nickname, nickname);
+    assert.strictEqual(myInfo.introduction, introduction);
 }
 
 describe('GET /v1/users/{userId}/info 테스트', function(){
