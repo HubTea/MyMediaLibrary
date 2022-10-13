@@ -4,45 +4,36 @@ const testUtil = require('./testUtil');
 const dbInitializer = require('./dbInitializer');
 
 
-class GetMyUploadListRequestFactory extends testUtil.RequestFactory{
-    constructor(uploaderUuid){
-        super();
-        this.uploaderUuid = uploaderUuid;
+class MyUploadPageGenerator extends testUtil.PageGenerator{
+    constructor(controller){
+        super(controller);
     }
 
-    create(cursor){
-        return testUtil.sendGetMyUploadListRequest({
-            userUuid: this.uploaderUuid,
-            cursor: cursor
-        });
+    generate(cursor){
+        return this.controller.getMyMediaList(cursor);
     }
 }
 
-async function testGetMyUploadList(option){
-    let {userId: userUuid, token} = await testUtil.registerUserAndLogIn({
-        accountId: option.user.accountId,
-        accountPassword: option.user.accountPassword,
-        nickname: option.user.nickname
-    });
+async function testGetMyUploadList(testCase){
+    let [user] = await testUtil.createSignedControllerList(
+        testUtil.localhostRequestOption,
+        [testCase.user]
+    );
     
-    let mediaUuidPromiseList = [];
+    let mediaUuidList = [];
 
-    for(let media of option.uploadList){
-        mediaUuidPromiseList.push(
-            testUtil.registerMedia({
-                userUuid: userUuid,
-                token: token,
-                title: media.title,
-                type: media.type,
-                description: media.description
-            })
-        );
+    for(let media of testCase.uploadList){
+        let mediaUuid = await user.registerMedia({
+            title: media.title,
+            description: media.description,
+            type: media.type
+        });
+        mediaUuidList.push(mediaUuid);
     }
 
-    let mediaUuidList = await Promise.all(mediaUuidPromiseList);
-    let factory = new GetMyUploadListRequestFactory(userUuid);
+    let generator = new MyUploadPageGenerator(user);
 
-    await testUtil.assertEqualPage(mediaUuidList, factory);
+    await testUtil.assertEqualOrderPage(mediaUuidList.reverse(), generator);
 }
 
 describe('GET /v1/users/{userUuid}/medias 테스트', function(){
