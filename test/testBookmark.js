@@ -17,28 +17,9 @@ class BookmarkPageGenerator extends testUtil.PageGenerator{
 }
 
 async function testBookmark(testCase){
-    let client = axios.create(testUtil.localhostRequestOption);
-    let user = new Controller(client);
-    let uploader = new Controller(client);
-
-    await user.registerUser({
-        accountId: testCase.user.accountId,
-        accountPassword: testCase.user.accountPassword,
-        nickname: testCase.user.nickname
-    });
-
-    await uploader.registerUser({
-        accountId: testCase.uploader.accountId,
-        accountPassword: testCase.uploader.accountPassword,
-        nickname: testCase.uploader.nickname
-    });
-
-    await user.logIn(
-        testCase.user.accountId, testCase.user.accountPassword
-    );
-
-    await uploader.logIn(
-        testCase.uploader.accountId, testCase.uploader.accountPassword
+    let [user, uploader] = await testUtil.createSignedControllerList(
+        testUtil.localhostRequestOption, 
+        [testCase.user, testCase.uploader]
     );
 
     let mediaUuidPromiseList = [];
