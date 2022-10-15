@@ -4,64 +4,38 @@ const testUtil = require('./testUtil');
 const dbInitializer = require('./dbInitializer');
 
 
-class GetFollowingListRequestFactory extends testUtil.RequestFactory{
-    constructor(subscriberUuid){
-        super();
-        this.subscriberUuid = subscriberUuid;
+class SubscriptionPageGenerator extends testUtil.PageGenerator{
+    constructor(controller){
+        super(controller);
     }
 
-    create(cursor){
-        return testUtil.sendGetFollowingListRequest({
-            subscriberUuid: this.subscriberUuid,
-            cursor: cursor
-        });
+    generate(cursor){
+        return this.controller.getMySubscriptionList(cursor);
     }
 }
 
+async function testSubscribe(testCase){
+    let userList = await testUtil.createSignedControllerList(
+        testUtil.localhostRequestOption,
+        [testCase.subscriber, ...testCase.uploaderList]
+    );
 
-async function testSubscribe(option){
-    let subscriberPromise = testUtil.registerUserAndLogIn({
-        accountId: option.subscriber.accountId,
-        accountPassword: option.subscriber.accountPassword,
-        nickname: option.subscriber.nickname
-    });
-    let uploaderUuidPromiseList = [];
+    let user = userList[0];
+    let uploaderList = userList.slice(1);
+    let uploaderUuidList = [];
 
-    for(let i = 0; i < option.uploaderList.length; i++){
-        let uploader = option.uploaderList[i];
+    for(let uploader of uploaderList){
+        let uploaderUuid = uploader.session.userUuid;
 
-        uploaderUuidPromiseList.push(
-            testUtil.registerUser({
-                accountId: uploader.accountId,
-                accountPassword: uploader.accountPassword,
-                nickname: uploader.nickname
-            })
-        );                
+        uploaderUuidList.push(uploaderUuid);
+        await user.subscribe(uploaderUuid);
+
+        assert.strictEqual(user.recentResponse.status, 200);
     }
 
-    let uploaderUuidList = await Promise.all(uploaderUuidPromiseList);
-    let subscriber = await subscriberPromise;
-    let subscribeRequestList = [];
+    let generator = new SubscriptionPageGenerator(user);
 
-    for(let uploaderUuid of uploaderUuidList){
-        subscribeRequestList.push(
-            testUtil.sendSubscribeRequest({
-                subscriberUuid: subscriber.userId,
-                uploaderUuid: uploaderUuid,
-                subscriberToken: subscriber.token
-            })
-        );
-    }
-    
-    for(let subscribeRequest of subscribeRequestList){
-        let subscribeResponse = await subscribeRequest.getResponse();
-
-        assert.strictEqual(subscribeResponse.statusCode, 200);
-    }
-
-    let factory = new GetFollowingListRequestFactory(subscriber.userId);
-    
-    await testUtil.assertEqualPage(uploaderUuidList, factory);
+    await testUtil.assertEqualPage(uploaderUuidList, generator);
 }
 
 describe('/v1/users/{userUuid}/following 테스트', function(){

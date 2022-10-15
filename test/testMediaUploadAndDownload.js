@@ -5,46 +5,26 @@ const testUtil = require('./testUtil');
 const dbInitializer = require('./dbInitializer');
 
 
-async function testMediaEndpoint({title, description, type, content}){
-    let {userId, token} = await testUtil.registerUserAndLogIn({
-        accountId: 'tempId',
-        accountPassword: 'passwordpassword',
-        nickname: 'tempName'
-    });
+async function testMediaEndpoint(testCase){
+    let [user] = await testUtil.createSignedControllerList(
+        testUtil.localhostRequestOption,
+        [testCase.user]
+    );
 
-    let registerMediaRequest = testUtil.sendRegisterMediaRequest({
-        userId: userId,
-        token: token,
-        description: description,
-        type: type,
-        title: title        
-    });
-    let registerMediaResponse = await registerMediaRequest.getResponse();
+    let mediaUuid = await user.registerMedia(testCase.media);
 
-    assert.strictEqual(registerMediaResponse.statusCode, 201);
-    assert.ok(uuid.validate(registerMediaResponse.headers.location));
+    assert.strictEqual(user.recentResponse.status, 201);
+    assert.ok(uuid.validate(mediaUuid));
 
-    let mediaUuid = registerMediaResponse.headers.location;
+    await user.uploadMedia(mediaUuid, testCase.media.content);
 
-    let uploadMediaRequest = testUtil.sendUploadMediaRequest({
-        mediaId: mediaUuid,
-        content: content,
-        type: type,
-        token: token
-    });
-    let uploadMediaResponse = await uploadMediaRequest.getResponse();
+    assert.strictEqual(user.recentResponse.status, 200);
 
-    assert.strictEqual(uploadMediaResponse.statusCode, 200);
+    let content = await user.downloadMedia(mediaUuid);
 
-    let downloadMediaRequest = testUtil.sendDownloadMediaRequest({
-        mediaId: mediaUuid
-    });
-    let downloadMediaResponse = await downloadMediaRequest.getResponse();
-    let downloadedContent = await downloadMediaRequest.getBodyBuffer();
-
-    assert.strictEqual(downloadMediaResponse.statusCode, 200);
-    assert.strictEqual(downloadMediaResponse.headers['content-type'], type);
-    assert.strictEqual(downloadedContent.toString(), content.toString());
+    assert.strictEqual(user.recentResponse.status, 200);
+    assert.strictEqual(user.recentResponse.headers['content-type'], testCase.media.type);
+    assert.strictEqual(content.toString(), testCase.media.content.toString());
 }
 
 describe('POST /v1/users/{userId}/media, POST /v1/medias/{mediaId}, GET /v1/medias/{mediaId} 테스트', function(){
@@ -55,11 +35,20 @@ describe('POST /v1/users/{userId}/media, POST /v1/medias/{mediaId}, GET /v1/medi
     });
 
     it('미디어 등록, 업로드, 다운로드 테스트', async function(){
-        await testMediaEndpoint({
-            title: 'media title',
-            description: 'the first upload',
-            type: 'image/jpeg',
-            content: 'first file'
-        });
+        let testCase = {
+            user: {
+                accountId: 'tempId',
+                accountPassword: 'passwordpassword',
+                nickname: 'tempName'
+            },
+            media: {
+                title: 'media title',
+                description: 'the first upload',
+                type: 'image/jpeg',
+                content: 'first file'
+            }
+        };
+
+        await testMediaEndpoint(testCase);
     });
 });
