@@ -14,38 +14,6 @@ const tagManipulator = require('./tag');
 
 const mediaRouter = express.Router();
 
-
-
-// function createDateRandomCursor(obj){
-//     let utcMs = obj.createdAt.getTime();
-//     let random = obj.random;
-
-//     return `${utcMs}_${random}`;
-// }
-
-// function createViewCountRandomCursor(obj){
-//     let viewCount = obj.viewCount;
-//     let random = obj.random;
-
-//     return `${viewCount}_${random}`;
-// }
-
-// function mediaToSimpleFormat(media){
-//     return {
-//         uuid: media.uuid,
-//         title: media.title,
-//         type: media.type,
-//         updateTime: media.updateTime,
-//         viewCount: media.viewCount,
-//         dislikeCount: media.dislikeCount,
-//         uploader: {
-//             uuid: media.Uploader.uuid,
-//             nickname: media.Uploader.nickname
-//         }
-//     };
-// }
-
-
 mediaRouter.get('/', async function(req, res){
     try{
         let length = checker.checkPaginationLength(req.query.length, 'length');
