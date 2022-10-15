@@ -1,7 +1,4 @@
-const express = require('express');
-const http = require('http');
 const uuid = require('uuid');
-const path = require('path');
 const assert = require('assert');
 const axios = require('axios').default;
 

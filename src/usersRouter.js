@@ -1,6 +1,5 @@
 const express = require('express');
 const crypto = require('crypto');
-const sequelize = require('sequelize');
 
 const errorHandler = require('./errorHandler');
 const security = require('./securityService');
@@ -12,7 +11,6 @@ const followingListRepository = require('./repository/followingListRepository');
 const bookmarkRepository = require('./repository/bookmarkRepository');
 const commentRepository = require('./repository/commentRepository');
 const checker = require('./checker');
-const serverConfig = require('./serverConfig');
 const pagination = require('./pagination');
 const tagManipulator = require('./tag');
 

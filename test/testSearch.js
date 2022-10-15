@@ -1,6 +1,3 @@
-const assert = require('assert');
-const axios = require('axios').default;
-
 const dbInitializer = require('./dbInitializer');
 const testUtil = require('./testUtil');
 

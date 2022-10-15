@@ -1,10 +1,8 @@
 const assert = require('assert');
 const uuid = require('uuid');
-const axios = require('axios').default;
 
 const dbInitializer = require('./dbInitializer');
 const testUtil = require('./testUtil');
-const { Controller } = require('../controller/controller');
 
 
 class MyCommentPageGenerator extends testUtil.PageGenerator{

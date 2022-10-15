@@ -1,5 +1,3 @@
-const assert = require('assert');
-
 const testUtil = require('./testUtil');
 const dbInitializer = require('./dbInitializer');
 

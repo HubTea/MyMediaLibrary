@@ -1,6 +1,5 @@
 const express = require('express');
 const stream = require('stream/promises');
-const sequelize = require('sequelize');
 
 const mediaRepository = require('./repository/mediaRepository');
 const userRepository = require('./repository/userRepository');
