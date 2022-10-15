@@ -32,7 +32,7 @@
 400 BadRequest
 
 {
-		code: "IllegalParameter",
+		code: "ILLEGAL_PARAMETER",
 		message: ...
 }
 ```
