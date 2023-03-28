@@ -1,7 +1,5 @@
 const s3 = require('@aws-sdk/client-s3');
 const s3Upload = require('@aws-sdk/lib-storage');
-const fsPromise = require('fs/promises');
-const streamPromise = require('stream/promises');
 
 const storage = require('../storageService');
 const serverConfig = require('../serverConfig');
@@ -151,52 +149,17 @@ class MediaEntity{
     }
     
     async getDownloadStream(){
-        this.assertPrepared();
+        try{
+            const mediaContent = await storage.client.send(new s3.GetObjectCommand({
+                Bucket: storage.bucket,
+                Key: this.getPath()
+            }));
 
-        let file = await fsPromise.open(this.getPath());
-        return file.createReadStream();
-    }
-
-    async upload(content){
-        this.assertPrepared();
-
-        let file = await fsPromise.open(this.getPath(), 'w');
-        await streamPromise.pipeline(
-            content, file.createWriteStream()
-        );
-        return;
-    }
-
-    getPath(){
-        return `C:\\storage\\mediaContent\\${this.uuid}`;
-    }
-
-    assertPrepared(){
-        if(!this.uuid){
-            throw new NotPreparedError();
+            return mediaContent.Body;
         }
-    }
-}
-
-class AwsS3MediaEntity extends MediaEntity{
-    constructor(){
-        super();
-    }
-
-    static fromUuid(uuid){
-        let obj = new AwsS3MediaEntity();
-
-        obj.uuid = uuid;
-        return obj;
-    }
-
-    async getDownloadStream(){
-        const mediaContent = await storage.client.send(new s3.GetObjectCommand({
-            Bucket: storage.bucket,
-            Key: this.getPath()
-        }));
-
-        return mediaContent.Body;
+        catch(err){
+            throw wrapStorageError(err);
+        }
     }
 
     async upload(content){
@@ -209,11 +172,22 @@ class AwsS3MediaEntity extends MediaEntity{
             }
         });
 
-        await upload.done();
+        try{
+            await upload.done();
+        }
+        catch(err){
+            throw wrapStorageError(err);
+        }
     }
 
     getPath(){
         return `original/${this.uuid}`;
+    }
+
+    assertPrepared(){
+        if(!this.uuid){
+            throw new NotPreparedError();
+        }
     }
 }
 
@@ -239,13 +213,7 @@ function wrapStorageError(err){
     }
 }
 
-if(process.env.NODE_ENV === 'production'){
-    module.exports = {
-        MediaEntity: AwsS3MediaEntity
-    };
-}
-else{
-    module.exports = {
-        MediaEntity
-    };
-}
+
+module.exports = {
+    MediaEntity
+};

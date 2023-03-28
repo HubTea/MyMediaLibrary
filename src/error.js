@@ -70,7 +70,7 @@ class OmittedParameterError extends ErrorResponse{
 
 class IllegalParameter extends ErrorResponse{
     constructor(underlyingError, parameterName){
-        super(400, 'IllegalParameter', underlyingError);
+        super(400, 'ILLEGAL_PARAMETER', underlyingError);
 
         this.parameterName = parameterName;
         this.evaluateMessage();

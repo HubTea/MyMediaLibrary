@@ -5,46 +5,46 @@ const dbInitializer = require('./dbInitializer');
 const testUtil = require('./testUtil');
 
 
-class MyCommentListRequestFactory extends testUtil.RequestFactory{
-    constructor(userUuid){
-        super();
-        this.userUuid = userUuid;
+class MyCommentPageGenerator extends testUtil.PageGenerator{
+    constructor(controller){
+        super(controller);
     }
 
-    create(cursor){
-        return testUtil.sendGetMyCommentListRequest({
-            userUuid: this.userUuid,
+    generate(cursor){
+        return this.controller.getMyCommentList({
             cursor: cursor
-        });
+        }); 
     }
 }
 
-class MediaCommentListRequestFactory extends testUtil.RequestFactory{
-    constructor(mediaUuid){
-        super();
+class MediaCommentPageGenerator extends testUtil.PageGenerator{
+    constructor(controller, mediaUuid){
+        super(controller);
+
         this.mediaUuid = mediaUuid;
     }
 
-    create(cursor){
-        return testUtil.sendGetMediaCommentListRequest({
+    generate(cursor){
+        return this.controller.getMediaCommentList({
             mediaUuid: this.mediaUuid,
             cursor: cursor
         });
     }
 }
 
-class ChildCommentListRequestFactory extends testUtil.RequestFactory{
-    constructor(mediaUuid, parentCommentUuid){
-        super();
+class MediaChildCommentPageGenerator extends testUtil.PageGenerator{
+    constructor(controller, mediaUuid, parentCommentUuid){
+        super(controller);
+        
         this.mediaUuid = mediaUuid;
         this.parentCommentUuid = parentCommentUuid;
     }
 
-    create(cursor){
-        return testUtil.sendGetMediaCommentListRequest({
+    generate(cursor){
+        return this.controller.getMediaCommentList({
             mediaUuid: this.mediaUuid,
-            parentCommentUuid: this.parentCommentUuid,
-            cursor: cursor
+            cursor: cursor,
+            parentCommentUuid: this.parentCommentUuid
         });
     }
 }
@@ -56,13 +56,12 @@ class ChildCommentListRequestFactory extends testUtil.RequestFactory{
  * @param {*} testCase 
  */
 async function testNotNestedComment(testCase){
-    let userUuid = await testUtil.registerUser(testCase.user);
-    let userToken = (await testUtil.logIn(testCase.user)).token;
-    let uploaderUuid = await testUtil.registerUser(testCase.uploader);
-    let uploaderToken = (await testUtil.logIn(testCase.uploader)).token;
-    let mediaUuid = await testUtil.registerMedia({
-        userUuid: uploaderUuid,
-        token: uploaderToken,
+    let [user, uploader] = await testUtil.createSignedControllerList(
+        testUtil.localhostRequestOption, 
+        [testCase.user, testCase.uploader]
+    );
+
+    let mediaUuid = await uploader.registerMedia({
         title: testCase.media.title,
         description: testCase.media.description,
         type: testCase.media.type
@@ -71,27 +70,22 @@ async function testNotNestedComment(testCase){
     let commentUuidList = [];
 
     for(let comment of testCase.commentList){
-        let registerCommentRequest = testUtil.sendRegisterCommentRequest({
-            userUuid: userUuid,
-            token: userToken,
+        let location = await user.comment({
             mediaUuid: mediaUuid,
-            commentContent: comment.content
+            content: comment.content
         });
-        let registerCommentResponse = await registerCommentRequest.getResponse();
 
-        assert.strictEqual(registerCommentResponse.statusCode, 201);
-        assert.ok(uuid.validate(registerCommentResponse.headers.location));   
+        assert.strictEqual(user.recentResponse.status, 201);
+        assert.ok(uuid.validate(location));   
         
-        commentUuidList.push(registerCommentResponse.headers.location);
+        commentUuidList.push(location);
     }
     
-    let myCommentListRequestFactory = new MyCommentListRequestFactory(userUuid);
+    let myCommentPageGenerator = new MyCommentPageGenerator(user);
+    let mediaCommentPageGenerator = new MediaCommentPageGenerator(user, mediaUuid);
 
-    await testUtil.assertEqualPage(commentUuidList, myCommentListRequestFactory);
-
-    let mediaCommentListRequestFactory = new MediaCommentListRequestFactory(mediaUuid);
-
-    await testUtil.assertEqualPage(commentUuidList, mediaCommentListRequestFactory);
+    await testUtil.assertEqualOrderPage(commentUuidList, myCommentPageGenerator);
+    await testUtil.assertEqualOrderPage(commentUuidList, mediaCommentPageGenerator);
 }
 
 /**
@@ -99,49 +93,45 @@ async function testNotNestedComment(testCase){
  * 그 댓글에 업로더가 여러 개의 답글을 작성함.
  * 컨텐츠에 달린 댓글 조회 api를 통해서 답글이 모두
  * 조회되는지 검사함.
- * @param {*} option 
+ * @param {*} testCase 
  */
-async function testNestedComment(option){
-    await testUtil.registerUser(option.user);
-    await testUtil.registerUser(option.uploader);
+async function testNestedComment(testCase){
+    let [user, uploader] = await testUtil.createSignedControllerList(
+        testUtil.localhostRequestOption, 
+        [testCase.user, testCase.uploader]
+    );
     
-    let userSession = await testUtil.logIn(option.user);
-    let uploaderSession = await testUtil.logIn(option.uploader);
-    let mediaUuid = await testUtil.registerMedia({
-        userUuid: uploaderSession.userUuid,
-        token: uploaderSession.token,
-        title: option.media.title,
-        description: option.media.description,
-        type: option.media.type
+    let mediaUuid = await uploader.registerMedia({
+        title: testCase.media.title,
+        description: testCase.media.description,
+        type: testCase.media.type
     });
-    let parentCommentUuid = await testUtil.comment({
-        userUuid: userSession.userUuid,
-        token: userSession.token,
+    
+    let parentCommentUuid = await user.comment({
         mediaUuid: mediaUuid,
-        content: option.parentComment.content
+        content: testCase.parentComment.content
     });
 
     let childCommentUuidList = [];
 
-    for(let comment of option.childCommentList){
-        let request = testUtil.sendRegisterCommentRequest({
-            userUuid: uploaderSession.userUuid,
-            token: uploaderSession.token,
+    for(let comment of testCase.childCommentList){
+        let location = await uploader.comment({
             mediaUuid: mediaUuid,
-            commentContent: comment.content,
-            parentUuid: parentCommentUuid
+            content: comment.content,
+            parentCommentUuid: parentCommentUuid
         });
-        let response = await request.getResponse();
 
-        assert.strictEqual(response.statusCode, 201);
-        assert.ok(uuid.validate(response.headers.location));
+        assert.strictEqual(uploader.recentResponse.status, 201);
+        assert.ok(uuid.validate(location));
 
-        childCommentUuidList.push(response.headers.location);
+        childCommentUuidList.push(location);
     }
     
-    let factory = new ChildCommentListRequestFactory(mediaUuid, parentCommentUuid);
+    let generator = new MediaChildCommentPageGenerator(
+        uploader, mediaUuid, parentCommentUuid
+    );
     
-    await testUtil.assertEqualPage(childCommentUuidList, factory);
+    await testUtil.assertEqualOrderPage(childCommentUuidList, generator);
 }
 
 describe('/v1/medias/{mediaUuid}/comments, /v1/users/{userUuid}/comments 테스트', function(){

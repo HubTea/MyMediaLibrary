@@ -4,38 +4,18 @@ const testUtil = require('./testUtil');
 const dbInitializer = require('./dbInitializer');
 
 
-async function testGetUserMetadata({accountId, nickname, introduction}){
-    let tempPassword = 'passwordpassword';
-    let tempNickname = 'tempNickname';
+async function testGetUserMetadata(testCase){
+    let [user] = await testUtil.createSignedControllerList(
+        testUtil.localhostRequestOption, [testCase.user]
+    );
 
-    let { userId, token } = await testUtil.registerUserAndLogIn({
-        accountId: accountId,
-        accountPassword: tempPassword,
-        nickname: tempNickname
-    });
+    await user.changeMyInfo(testCase.newInfo);
 
-    console.log(`userId: ${userId}`);
+    let myInfo = await user.getMyInfo();
 
-    let patchUserMetadataRequest = testUtil.sendPatchUserMetadataRequest({
-        userId: userId,
-        token: token,
-        nickname: nickname,
-        introduction: introduction
-    });
-    await patchUserMetadataRequest.getResponse();
-
-    let getUserMetadataRequest = testUtil.sendGetUserMetadataRequest({
-        userId: userId
-    });
-    let response = await getUserMetadataRequest.getResponse();
-    let body = await getUserMetadataRequest.getBodyObject();
-
-    assert.strictEqual(response.statusCode, 200);
-
-    assert.strictEqual(body.nickname, nickname);
-    assert.strictEqual(body.introduction, introduction);
-
-    console.log(body);
+    assert.strictEqual(user.recentResponse.status, 200);
+    assert.strictEqual(myInfo.nickname, testCase.newInfo.nickname);
+    assert.strictEqual(myInfo.introduction, testCase.newInfo.introduction);
 }
 
 describe('GET /v1/users/{userId}/info 테스트', function(){
@@ -48,11 +28,20 @@ describe('GET /v1/users/{userId}/info 테스트', function(){
     it(
         '응답으로 PATCH /v1/users/{userId}/info로 전달했던 값이 제대로 오는지 테스트',
         async function(){
-            await testGetUserMetadata({
-                accountId: 'tempAccountId',
-                nickname: 'alpha',
-                introduction: 'beta'
-            });
+            let testCase = {
+                user: {
+                    accountId: 'tempAccountId',
+                    accountPassword: 'tempPassword',
+                    nickname: 'tempNickname'
+                },
+
+                newInfo: {
+                    nickname: 'alpha',
+                    introduction: 'beta'
+                }
+            };
+
+            await testGetUserMetadata(testCase);
         }
     );
 });

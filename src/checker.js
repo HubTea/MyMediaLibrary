@@ -1,12 +1,9 @@
-const jwt = require('jsonwebtoken');
 const uuid = require('uuid');
 
 const security = require('./securityService');
-const errorHandler = require('./errorHandler');
 const error = require('./error');
 const authorizer = require('./authorizer');
 const mediaRepository = require('./repository/mediaRepository');
-const userRepository = require('./repository/userRepository');
 const pagination = require('./pagination');
 
 

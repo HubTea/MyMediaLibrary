@@ -1,42 +1,40 @@
 const assert = require('assert');
 const jwt = require('jsonwebtoken');
 const uuid = require('uuid');
+const axios = require('axios').default;
 
 const testUtil = require('./testUtil');
 const error = require('../src/error');
 const dbInitializer = require('./dbInitializer');
+const { Controller } = require('../controller/controller');
 
 
-async function testRegisteredUserLogIn({accountId, accountPassword}){
-    let registerUserRequest = testUtil.sendRegisterUserRequest({
-        accountId: accountId,
-        accountPassword: accountPassword,
-        nickname: 'test'
-    });
-    await registerUserRequest.getResponse();
+async function testRegisteredUserLogIn(testCase){
+    let client = axios.create(testUtil.localhostRequestOption);
+    let user = new Controller(client);
 
-    let logInRequest = testUtil.sendLogInRequest({
-        accountId: accountId,
-        accountPassword: accountPassword
-    });
-    let logInResponse = await logInRequest.getResponse();
-    let logInResponseBody = await logInRequest.getBodyObject();
+    await user.registerUser(testCase.user);
 
-    assert.strictEqual(logInResponse.statusCode, 200);
-    assert.ok(uuid.validate(logInResponseBody.userUuid));
-    assert.ok(jwt.decode(logInResponseBody.token));
+    let session = await user.logIn(
+        testCase.user.accountId, testCase.user.accountPassword
+    );
+
+    assert.strictEqual(user.recentResponse.status, 200);
+    assert.ok(uuid.validate(session.userUuid));
+    assert.ok(jwt.decode(session.token));
 }
 
-async function testUnregisteredUserLogIn({accountId, accountPassword}){
-    let request = testUtil.sendLogInRequest({
-        accountId: accountId,
-        accountPassword: accountPassword
-    });
-    let response = await request.getResponse();
-    let body = await request.getBodyObject();
+async function testUnregisteredUserLogIn(testCase){
+    let client = axios.create(testUtil.localhostRequestOption);
+    let user = new Controller(client);
 
-    assert.strictEqual(response.statusCode, 400);
-    assert.strictEqual(body.error.code, new error.UserNotExistError().errorCode);
+    await user.logIn(
+        testCase.unregisteredUser.accountId,
+        testCase.unregisteredUser.accountPassword
+    );
+
+    assert.strictEqual(user.recentResponse.status, 400);
+    assert.strictEqual(user.recentResponse.data.error.code, new error.UserNotExistError().errorCode);
 }
 
 describe('POST /v1/auth 테스트', function(){
@@ -47,19 +45,29 @@ describe('POST /v1/auth 테스트', function(){
     });
 
     it('등록된 유저 로그인 테스트', async function(){
-        await testRegisteredUserLogIn({
-            accountId: 'testAccount123',
-            accountPassword: 'passwordpassword'
-        });
+        let testCase = {
+            user: {
+                accountId: 'testAccount123',
+                accountPassword: 'passwordpassword',
+                nickname: 'test'
+            }
+        };
+
+        await testRegisteredUserLogIn(testCase);
     });
 
     it(
         '등록되지 않은 계정으로 로그인하면 에러 코드를 보내는 지 확인',
         async function(){
-            await testUnregisteredUserLogIn({
-                accountId: 'unregistered',
-                accountPassword: 'passwordpassword'
-            });
+            let testCase = {
+                unregisteredUser: {
+                    accountId: 'unregistered',
+                    accountPassword: 'passwordpassword',
+                    nickname: 'test'
+                }
+            };
+
+            await testUnregisteredUserLogIn(testCase);
         }
     );
 });

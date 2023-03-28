@@ -1,8 +1,6 @@
 # MyMediaLibrary API Spec
 
-## 목차
-
-# 에러 코드
+## 에러 코드
 
 권한이 필요한 요청에서 토큰이 없는 경우 또는 필수적인 파라미터가 없는 경우
 
@@ -32,7 +30,7 @@
 400 BadRequest
 
 {
-		code: "IllegalParameter",
+		code: "ILLEGAL_PARAMETER",
 		message: ...
 }
 ```

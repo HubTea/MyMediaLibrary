@@ -1,94 +1,53 @@
-const assert = require('assert');
-const axios = require('axios').default;
-
 const dbInitializer = require('./dbInitializer');
 const testUtil = require('./testUtil');
 
 
-/**
- * AxiosResponse와 testUtil.Request 사이의 어댑터
- */
-class AxiosGetRequest{
-    constructor(path, config){
-        this.request = axios.create(
-            new testUtil.RequestOptionBuilder(testUtil.localhostRequestOption).export()
-        );
-
-        this.responsePromise = this.request.get(path, config);
-    }
-
-    async getResponse(){
-        let response = await this.responsePromise;
-
-        return {
-            statusCode: response.status,
-            headers: response.headers
-        };
-    }
-
-    async getBodyObject(){
-        let response = await this.responsePromise;
-
-        return response.data;
-    }
-}
-
-class MediaListRequestFactory extends testUtil.RequestFactory{
-    constructor(sort, tagList){
-        super();
+class MediaPageGenerator extends testUtil.PageGenerator{
+    constructor(controller, sort, tagList){
+        super(controller);
 
         this.sort = sort;
         this.tagList = tagList;
     }
 
-    create(cursor){
-        return new AxiosGetRequest('/medias', {
-            params: {
-                sort: this.sort,
-                tag: this.tagList,
-                cursor: cursor
-            }
+    generate(cursor){
+        return this.controller.searchMedia({
+            tagList: this.tagList,
+            sort: this.sort,
+            cursor: cursor
         });
     }
 }
 
-async function testSearchMedia(option, sort){
-    await testUtil.registerUser(option.user);
 
-    let userSession = await testUtil.logIn(option.user);
+async function testSearchMedia(testCase){
+    let [user] = await testUtil.createSignedControllerList(
+        testUtil.localhostRequestOption,
+        [testCase.user]
+    );
+
     let mediaUuidList = [];
     let answerUuidList = [];
-    
-    for(let media of option.mediaList){
-        mediaUuidList[media.title] = await testUtil.registerMedia({
-            userUuid: userSession.userUuid,
-            token: userSession.token,
-            title: media.title,
-            description: media.description,
-            type: media.type,
-            tagList: media.tagList
-        });
+
+    for(let media of testCase.mediaList){
+        mediaUuidList[media.title] = await user.registerMedia(media); 
     }
     
-    for(let title of option.answer.titleList){
+    for(let title of testCase.answer.titleList){
         answerUuidList.push(mediaUuidList[title]);
     }
 
-    if(sort === 'most_watched'){
-        for(let media of option.mediaList){
+    if(testCase.sort === 'most_watched'){
+        for(let media of testCase.mediaList){
             for(let i = 0; i < media.viewCount; i++){
-                let request = testUtil.sendGetMediaMetadataRequest({
-                    mediaId: mediaUuidList[media.title]
-                });
-
-                await request.getResponse();
+                await user.getMediaInfo(mediaUuidList[media.title]);
             }
         }
     }
 
-    let newestFirstFactory = new MediaListRequestFactory(sort, option.answer.tagList);
+    let generator = new MediaPageGenerator(user, testCase.sort, testCase.searchTagList);
 
-    await testUtil.assertEqualOrderPage(answerUuidList, newestFirstFactory);
+    await testUtil.assertEqualOrderPage(answerUuidList, generator);
 }
 
 describe('/v1/medias 테스트', function(){
@@ -132,18 +91,20 @@ describe('/v1/medias 테스트', function(){
     it('최신순으로 태그 검색 테스트', async function(){
         let testCase = Object.assign({}, originalTestCase);
 
+        testCase.sort = 'new';
+        testCase.searchTagList = ['b', 'c'];
         testCase.answer = {
-            tagList: ['b', 'c'],
             titleList: ['media3', 'media1']
         };
-        await testSearchMedia(testCase, 'new');
+        await testSearchMedia(testCase);
     });
 
     it('오래된순으로 태그 검색 테스트', async function(){
         let testCase = Object.assign({}, originalTestCase);
 
+        testCase.sort = 'old';
+        testCase.searchTagList = ['b', 'c'];
         testCase.answer = {
-            tagList: ['b', 'c'],
             titleList: ['media1', 'media3']
         };
         await testSearchMedia(testCase, 'old');
@@ -152,10 +113,11 @@ describe('/v1/medias 테스트', function(){
     it('조회수 많은순으로 태그 검색 테스트', async function(){
         let testCase = Object.assign({}, originalTestCase);
 
+        testCase.sort = 'most_watched';
+        testCase.searchTagList = ['a'];
         testCase.answer = {
-            tagList: ['a'],
             titleList: ['media2', 'media3', 'media1']
         };
-        await testSearchMedia(testCase, 'most_watched');
+        await testSearchMedia(testCase);
     });
-})
+});

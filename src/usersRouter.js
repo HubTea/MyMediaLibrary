@@ -1,6 +1,5 @@
 const express = require('express');
 const crypto = require('crypto');
-const sequelize = require('sequelize');
 
 const errorHandler = require('./errorHandler');
 const security = require('./securityService');
@@ -12,7 +11,6 @@ const followingListRepository = require('./repository/followingListRepository');
 const bookmarkRepository = require('./repository/bookmarkRepository');
 const commentRepository = require('./repository/commentRepository');
 const checker = require('./checker');
-const serverConfig = require('./serverConfig');
 const pagination = require('./pagination');
 const tagManipulator = require('./tag');
 
@@ -166,12 +164,7 @@ router.get('/:userUuid/medias', async function(req, res){
                     dislikeCount: myUpload.dislikeCount
                 };
             },
-            cursorFactory: function(myUpload){
-                let nextTime = myUpload.updateTime.getTime();
-                let nextRandom = myUpload.random;
-    
-                return `${nextTime}_${nextRandom}`;
-            }
+            cursorFactory: pagination.createDateRandomCursor
         });
 
         let user = new userRepository.UserEntity();
@@ -206,9 +199,7 @@ router.get('/:userUuid/following', async function(req, res){
                     nickname: uploader.nickname
                 };
             },
-            cursorFactory: function(subscribeInfo){
-                return subscribeInfo.order.toString();
-            }
+            cursorFactory: pagination.createOrderCursor
         });
         let userEntity = new userRepository.UserEntity();
         let userValueObject = await userEntity.getUserByUuid(userUuid);
@@ -267,22 +258,9 @@ router.get('/:userUuid/bookmarks', async function(req, res){
             mapper: function(bookmarkInstance){
                 let collection = bookmarkInstance.Media;
 
-                return {
-                    uuid: collection.uuid,
-                    title: collection.title,
-                    type: collection.type,
-                    updateTime: collection.updateTime,
-                    viewCount: collection.viewCount,
-                    dislikeCount: collection.dislikeCount,
-                    uploader: {
-                        uuid: collection.Uploader.uuid,
-                        nickname: collection.Uploader.nickname
-                    }
-                };
+                return pagination.mediaToSimpleFormat(collection);
             },
-            cursorFactory: function(bookmarkInstance){
-                return bookmarkInstance.order.toString();
-            }
+            cursorFactory: pagination.createOrderCursor
         });
 
         let userEntity = new userRepository.UserEntity();
@@ -359,12 +337,7 @@ router.get('/:userUuid/comments', async function(req, res){
                     updatedAt: comment.updatedAt.toISOString()
                 };
             },
-            cursorFactory: function(comment){
-                let utcMs = comment.createdAt.getTime();
-                let random = comment.random;
-    
-                return `${utcMs}_${random}`;
-            }
+            cursorFactory: pagination.createDateRandomCursor
         });
         let requiredLength = paginator.getRequiredLength();
     
