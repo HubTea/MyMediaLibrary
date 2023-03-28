@@ -43,10 +43,7 @@ async function createFollowing(userId, subscriberId){
         });
     }
     catch(err){
-        if(err instanceof sequelize.UniqueConstraintError){
-            //아무것도 안 함.
-        }
-        else{
+        if(!(err instanceof sequelize.UniqueConstraintError)){
             throw error.wrapSequelizeError(err);
         }
     }
