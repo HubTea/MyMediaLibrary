@@ -95,20 +95,43 @@ class MediaEntity{
      * @returns 
      */
     async createMetadata(mediaSeed){
+        let transaction = null;
         try{
             mediaSeed = setUpdateTime(mediaSeed);
             mediaSeed = setRandom(mediaSeed);
-            this.modelInstance = await this.model.create(mediaSeed);
+
+            transaction = await serverConfig.sequelize.transaction();   
+
+            this.modelInstance = await this.model.create(mediaSeed, {
+                transaction: transaction
+            });
+
+            await serverConfig.model.MediaViewCount.create({
+                mediaId: this.modelInstance.id
+            }, {
+                transaction: transaction
+            });
+
+            await transaction.commit();
+
             this.uuid = this.modelInstance.uuid;
             return converter.mediaToValueObject(this.modelInstance);
         }
         catch(mediaCreateError){
+            this.uuid = null;
+            this.modelInstance = null;
+            if(!transaction) {
+                await transaction.rollback();
+            }
             throw error.wrapSequelizeError(mediaCreateError);
         }
     }
 
     async addViewCount(count){
-        await this.add({
+        await this.getMetadataIfNotCached();
+        await increase(serverConfig.model.MediaViewCount, {
+            mediaId: this.modelInstance.id
+        }, {
             viewCount: count
         });
     }
@@ -210,6 +233,17 @@ function wrapStorageError(err){
     }
     else{
         return err;
+    }
+}
+
+async function increase(model, where, fields) {
+    try{
+        await model.increment(fields, {
+            where: where
+        });
+    }
+    catch(err){
+        throw error.wrapSequelizeError(err);
     }
 }
 

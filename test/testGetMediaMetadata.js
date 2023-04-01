@@ -31,7 +31,7 @@ async function testGetMediaMetadata({title, description, type, tagList}){
     assert.strictEqual(metadata.title, title);
     assert.strictEqual(metadata.description, description);
     assert.strictEqual(metadata.type, type);
-    assert.strictEqual(metadata.viewCount, 1);
+    assert.strictEqual(metadata.viewCount, 0);
     assert.strictEqual(metadata.dislikeCount, 0);
     assert.strictEqual(metadata.uploader.uuid, user.session.userUuid);
     assert.strictEqual(metadata.uploader.nickname, tempNickname);

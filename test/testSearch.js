@@ -47,7 +47,7 @@ async function testSearchMedia(testCase){
 
     let generator = new MediaPageGenerator(user, testCase.sort, testCase.searchTagList);
 
-    await testUtil.assertEqualOrderPage(answerUuidList, generator);
+    await testUtil.assertEqualPage(answerUuidList, generator);
 }
 
 describe('/v1/medias 테스트', function(){

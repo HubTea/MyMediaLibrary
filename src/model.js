@@ -13,6 +13,7 @@ class Subscribe extends Model{}
 class Tag extends Model{}
 class Media extends Model{}
 class Comment extends Model{}
+class MediaViewCount extends Model{}
 
 
 module.exports = function GetModels(sequelize){
@@ -177,7 +178,21 @@ module.exports = function GetModels(sequelize){
             }]
         }]
     });
+
+    MediaViewCount.init({
+        mediaId: {
+            type: DataTypes.INTEGER,
+            primaryKey: true
+        },
+        viewCount: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0,
+            allowNull: false
         }
+    }, {
+        sequelize,
+        timestamps: false,
+        freezeTableName: true
     });
     
     Bookmark.init({
@@ -384,6 +399,13 @@ module.exports = function GetModels(sequelize){
         foreignKey: 'mediaId'
     });
 
+    Media.hasOne(MediaViewCount, {
+        foreignKey: 'mediaId'
+    });
+    MediaViewCount.belongsTo(Media, {
+        foreignKey: 'mediaId'
+    });
+
 
     User.hasMany(Comment, {
         as: 'UserComments',
@@ -401,6 +423,7 @@ module.exports = function GetModels(sequelize){
         Subscribe,
         Tag,
         Media,
+        MediaViewCount,
         Comment,
     };
 };
