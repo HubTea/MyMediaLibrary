@@ -146,6 +146,37 @@ module.exports = function GetModels(sequelize){
         name: {
             singular: 'Media',
             plural: 'Medias'
+        },
+
+        indexes: [{
+            name: 'idx_created_at_random_desc',
+            fields: [{
+                name: 'createdAt',
+                order: 'DESC'
+            }, {
+                name: 'random',
+                order: 'DESC'
+            }]
+        }, {
+            name: 'idx_created_at_random_asc',
+            fields: [{
+                name: 'createdAt',
+                order: 'ASC'
+            }, {
+                name: 'random',
+                order: 'ASC'
+            }]
+        }, {
+            name: 'idx_view_count_random_desc',
+            fields: [{
+                name: 'viewCount',
+                order: 'DESC'
+            }, {
+                name: 'random',
+                order: 'DESC'
+            }]
+        }]
+    });
         }
     });
     
