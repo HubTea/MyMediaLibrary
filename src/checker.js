@@ -114,7 +114,7 @@ function checkTwoIntCursor(cursor, delimiter, parameterName){
     let splitted = checkTwoIntCursor(cursor, delimiter, parameterName);
 
     return [
-        new Date().setTime(splitted[0]), 
+        new Date(splitted[0]),
         splitted[1]
     ];
 }
