@@ -19,19 +19,16 @@ async function getAllMedia(option){
 function getDateDescendingMediaList(latestDate, random, tagList, length){
     return getAllMedia({
         where: {
-            [sequelize.Op.or]: [{
-                createdAt: {
-                    [sequelize.Op.lt]: latestDate
+            [sequelize.Op.and]: [
+                sequelize.literal(
+                    `
+                    ("Media"."createdAt", "Media"."random") <= 
+                    ('${latestDate.toISOString()}', ${random})
+                    `
+                ), {
+                    [sequelize.Op.and]: createTagConditionList(tagList)
                 }
-            }, {
-                createdAt: {
-                    [sequelize.Op.eq]: latestDate
-                },
-                random: {
-                    [sequelize.Op.gte]: random
-                }
-            }],
-            [sequelize.Op.and]: createTagConditionList(tagList)
+            ]
         },
         include: [{
             model: serverConfig.model.User,
@@ -40,7 +37,7 @@ function getDateDescendingMediaList(latestDate, random, tagList, length){
         }],
         order: [
             ['createdAt', 'DESC'],
-            ['random', 'ASC']
+            ['random', 'DESC']
         ],
         limit: length
     });
@@ -49,19 +46,16 @@ function getDateDescendingMediaList(latestDate, random, tagList, length){
 function getDateAscendingMediaList(earliestDate, random, tagList, length){
     return getAllMedia({
         where: {
-            [sequelize.Op.or]: [{
-                createdAt: {
-                    [sequelize.Op.gt]: earliestDate
+            [sequelize.Op.and]: [
+                sequelize.literal(
+                    `
+                    ("Media"."createdAt", "Media"."random") >= 
+                    ('${earliestDate.toISOString()}', ${random})
+                    `
+                ), {
+                    [sequelize.Op.and]: createTagConditionList(tagList)
                 }
-            }, {
-                createdAt: {
-                    [sequelize.Op.eq]: earliestDate
-                },
-                random: {
-                    [sequelize.Op.gte]: random
-                }
-            }],
-            [sequelize.Op.and]: createTagConditionList(tagList)
+            ]
         },
         include: [{
             model: serverConfig.model.User,
@@ -79,19 +73,16 @@ function getDateAscendingMediaList(earliestDate, random, tagList, length){
 function getViewCountDescendingMediaList(viewCount, random, tagList, length){
     return getAllMedia({
         where: {
-            [sequelize.Op.or]: [{
-                viewCount: {
-                    [sequelize.Op.lt]: viewCount
+            [sequelize.Op.and]: [
+                sequelize.literal(
+                    `
+                    ("Media"."viewCount", "Media"."random") <= 
+                    (${viewCount}, ${random})
+                    `
+                ), {
+                    [sequelize.Op.and]: createTagConditionList(tagList)
                 }
-            }, {
-                viewCount: {
-                    [sequelize.Op.eq]: viewCount
-                },
-                random: {
-                    [sequelize.Op.gte]: random
-                }
-            }],
-            [sequelize.Op.and]: createTagConditionList(tagList)
+            ]
         },
         include: [{
             model: serverConfig.model.User,
@@ -100,7 +91,7 @@ function getViewCountDescendingMediaList(viewCount, random, tagList, length){
         }],
         order: [
             ['viewCount', 'DESC'],
-            ['random', 'ASC']
+            ['random', 'DESC']
         ],
         limit: length
     });
@@ -125,23 +116,20 @@ function createTagConditionList(tagList){
 function getLatestUploadList(userId, latestDate, random, length){
     return getAllMedia({
         where: {
-            uploaderId: userId,
-            [sequelize.Op.or]: [{
-                createdAt: {
-                    [sequelize.Op.lt]: latestDate
+            [sequelize.Op.and]: [
+                sequelize.literal(
+                    `
+                    ("Media"."createdAt", "Media"."random") <= 
+                    ('${latestDate.toISOString()}', ${random})
+                    `
+                ), {
+                    uploaderId: userId
                 }
-            }, {
-                createdAt: {
-                    [sequelize.Op.eq]: latestDate
-                },
-                random: {
-                    [sequelize.Op.gte]: random
-                }
-            }]
+            ]
         },
         order: [
             ['createdAt', 'DESC'],
-            ['random', 'ASC']
+            ['random', 'DESC']
         ],
         limit: length
     });
