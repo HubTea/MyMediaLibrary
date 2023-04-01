@@ -8,16 +8,21 @@ const getModels = require('../src/model');
 
 
 async function initialize({logging}){
+    await sync(true, logging);
+}
+
+async function sync(force, logging) {
     const sequelize = new Sequelize(sqlServer.url, {
         logging: logging
     });
     getModels(sequelize);
-    await sequelize.sync({force: true});
+    await sequelize.sync({force: force});
     await sequelize.close();
 }
 
 
 module.exports = {
-    initialize: initialize
+    initialize: initialize,
+    sync: sync
 };
 
