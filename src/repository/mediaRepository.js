@@ -137,22 +137,12 @@ class MediaEntity{
     }
 
     async addDislikeCount(count){
-        await this.add({
+        await this.getMetadataIfNotCached();
+        await increase(this.model, {
+            id: this.modelInstance.id
+        }, {
             dislikeCount: count
         });
-    }
-
-    async add(fields){
-        try{
-            await this.model.increment(fields, {
-                where: {
-                    uuid: this.uuid
-                }
-            });
-        }
-        catch(err){
-            throw error.wrapSequelizeError(err);
-        }
     }
 
     async getViewCount(){
