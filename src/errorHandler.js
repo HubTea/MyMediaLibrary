@@ -2,25 +2,23 @@ const error = require('./error');
 const serverConfig = require('./serverConfig');
 
 
-function handleError(res, err){
-    if(!(err instanceof error.ErrorResponse)){
-        err = new error.UnexpectedError(err);
-    }
-    
+function handleError(req, res, err){
     let level = 'info';
 
-    if(err.httpStatusCode >= 500){
+    if(!(err instanceof error.ErrorResponse)){
+        err = new error.UnexpectedError(err);
         level = 'error';
     }
-
+    
     serverConfig.logger.log({
         level: level, 
-        message: JSON.stringify({
-            errorCode: err.errorCode,
-            message: err.message,
-            stack: err.stack,
-            underlyingError: err.underlyingError
-        })
+        message: {
+            method: req.method,
+            url: req.originalUrl,
+            header: req.headers,
+            body: req.body,
+            error: err
+        }
     });
     
     res.status(err.httpStatusCode);
