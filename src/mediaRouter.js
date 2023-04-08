@@ -23,45 +23,45 @@ mediaRouter.get('/', async function(req, res){
         let paginator;
 
         if(sort === 'new'){
-            let [date, random] = checker.checkDateRandomCursor(
-                req.query.cursor, '_', pagination.endingDate, 'cursor'
+            let [date, uuid] = checker.checkDateUuidCursor(
+                req.query.cursor, '_', pagination.endingDate, pagination.maximumUuid, 'cursor'
             );
             paginator = new pagination.Paginator({
                 length: length,
                 mapper: pagination.mediaToSimpleFormat,
-                cursorFactory: pagination.createDateRandomCursor
+                cursorFactory: pagination.createDateUuidCursor
             }); 
 
             mediaList = await mediaListRepository.getDateDescendingMediaList(
-                date, random, tagList, paginator.getRequiredLength()
+                date, uuid, tagList, paginator.getRequiredLength()
             );
         }
         else if(sort === 'old'){
-            let [date, random] = checker.checkDateRandomCursor(
-                req.query.cursor, '_', pagination.beginningDate, 'cursor'
+            let [date, uuid] = checker.checkDateUuidCursor(
+                req.query.cursor, '_', pagination.beginningDate, pagination.minimumUuid, 'cursor'
             );
             paginator = new pagination.Paginator({
                 length: length,
                 mapper: pagination.mediaToSimpleFormat,
-                cursorFactory: pagination.createDateRandomCursor
+                cursorFactory: pagination.createDateUuidCursor
             });
 
             mediaList = await mediaListRepository.getDateAscendingMediaList(
-                date, random, tagList, paginator.getRequiredLength()
+                date, uuid, tagList, paginator.getRequiredLength()
             );
         }
         else if(sort === 'most_watched'){
-            let [viewCount, random] = checker.checkViewCountRandomCursor(
-                req.query.cursor, '_', pagination.maximumViewCount, 'cursor'
+            let [viewCount, uuid] = checker.checkViewCountUuidCursor(
+                req.query.cursor, '_', pagination.maximumViewCount, pagination.maximumUuid, 'cursor'
             );
             paginator = new pagination.Paginator({
                 length: length,
                 mapper: pagination.mediaToSimpleFormat,
-                cursorFactory: pagination.createViewCountRandomCursor
+                cursorFactory: pagination.createViewCountUuidCursor
             });
 
             mediaList = await mediaListRepository.getViewCountDescendingMediaList(
-                viewCount, random, tagList, paginator.getRequiredLength()
+                viewCount, uuid, tagList, paginator.getRequiredLength()
             );
         }
 

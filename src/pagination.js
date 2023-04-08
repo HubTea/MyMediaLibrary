@@ -14,6 +14,9 @@ const maximumOrder = 0x7fffffff;
 const minimumViewCount = 0;
 const maximumViewCount = 0x7fffffff;
 
+const minimumUuid = '00000000-0000-0000-0000-000000000000';
+const maximumUuid = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
+
 
 class Paginator{
     /**
@@ -78,11 +81,14 @@ function createDateRandomCursor(obj){
     return `${utcMs}_${random}`;
 }
 
-function createViewCountRandomCursor(obj){
-    let viewCount = obj.viewCount;
-    let random = obj.random;
+function createDateUuidCursor(obj){
+    let utcMs = obj.createdAt.getTime();
 
-    return `${viewCount}_${random}`;
+    return `${utcMs}_${obj.uuid}`;
+}
+
+function createViewCountUuidCursor(obj){
+    return `${obj.viewCount}_${obj.uuid}`;
 }
 
 function createOrderCursor(obj){
@@ -121,10 +127,14 @@ module.exports = {
     minimumViewCount,
     maximumViewCount,
 
+    minimumUuid,
+    maximumUuid,
+
     Paginator,
 
     createDateRandomCursor,
-    createViewCountRandomCursor,
+    createDateUuidCursor,
+    createViewCountUuidCursor,
     createOrderCursor,
 
     mediaToSimpleFormat

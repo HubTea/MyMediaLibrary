@@ -150,30 +150,30 @@ module.exports = function GetModels(sequelize){
         },
 
         indexes: [{
-            name: 'idx_created_at_random_desc',
+            name: 'idx_created_at_uuid_desc',
             fields: [{
                 name: 'createdAt',
                 order: 'DESC'
             }, {
-                name: 'random',
+                name: 'uuid',
                 order: 'DESC'
             }]
         }, {
-            name: 'idx_created_at_random_asc',
+            name: 'idx_created_at_uuid_asc',
             fields: [{
                 name: 'createdAt',
                 order: 'ASC'
             }, {
-                name: 'random',
+                name: 'uuid',
                 order: 'ASC'
             }]
         }, {
-            name: 'idx_view_count_random_desc',
+            name: 'idx_view_count_uuid_desc',
             fields: [{
                 name: 'viewCount',
                 order: 'DESC'
             }, {
-                name: 'random',
+                name: 'uuid',
                 order: 'DESC'
             }]
         }]

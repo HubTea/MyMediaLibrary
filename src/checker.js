@@ -103,6 +103,16 @@ function checkTwoIntCursor(cursor, delimiter, parameterName){
     return [parseInt(splitted[0]), parseInt(splitted[1])];
 }
 
+function checkIntegerUuidCursor(cursor, delimiter, parameterName) {
+    let splitted = cursor.split(delimiter);
+
+    if(isNaN(splitted[0]) || !uuid.validate(splitted[1])) {
+        throw new error.IllegalParameter(null, parameterName);
+    }
+
+    return [parseInt(splitted[0]), splitted[1]];
+}
+
 /**
  * 
  * @param {string} cursor 정수_정수 형식의 문자열
@@ -169,13 +179,20 @@ function checkOrderCursor(cursor, defaultOrder, parameterName){
     }
 }
 
-function checkViewCountRandomCursor(cursor, delimiter, defaultViewCount, parameterName){
-    if(cursor){
-        return checkTwoIntCursor(cursor, delimiter, parameterName);
+function checkViewCountUuidCursor(cursor, delimiter, defaultViewCount, defaultUuid, parameterName) {
+    if(cursor) {
+        return checkIntegerUuidCursor(cursor, delimiter, parameterName);
     }
-    else{
-        return [defaultViewCount, pagination.minimumRandom];
+    return [defaultViewCount, defaultUuid];
+}
+
+function checkDateUuidCursor(cursor, delimiter, defaultDate, defaultUuid, parameterName) {
+    if(cursor) {
+        let [timestamp, uuidString] = checkIntegerUuidCursor(cursor, delimiter, parameterName);
+
+        return [new Date(timestamp), uuidString];
     }
+    return [defaultDate, defaultUuid];
 }
 
 function checkPlaintext(text, parameterName){
@@ -298,7 +315,8 @@ module.exports = {
     checkDateRandomCursor,
     checkDateOrderCursor,
     checkOrderCursor,
-    checkViewCountRandomCursor,
+    checkViewCountUuidCursor,
+    checkDateUuidCursor,
     checkPlaintext,
     checkMimeType,
     checkAccountId,

@@ -150,7 +150,9 @@ router.get('/:userUuid/medias', async function(req, res){
     try{
         let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
         let length = checker.checkPaginationLength(req.query.length, 'length');
-        let [date, random] = checker.checkDateRandomCursor(req.query.cursor, '_', pagination.endingDate, 'cursor');
+        let [date, uuid] = checker.checkDateUuidCursor(
+            req.query.cursor, '_', pagination.endingDate, pagination.maximumUuid, 'cursor'
+        );
 
         let paginator = new pagination.Paginator({
             length: length,
@@ -164,14 +166,14 @@ router.get('/:userUuid/medias', async function(req, res){
                     dislikeCount: myUpload.dislikeCount
                 };
             },
-            cursorFactory: pagination.createDateRandomCursor
+            cursorFactory: pagination.createDateUuidCursor
         });
 
         let user = new userRepository.UserEntity();
         let userValueObject = await user.getUserByUuid(userUuid);
 
         let myUploadList = await mediaListRepository.getLatestUploadList(
-            userValueObject.id, date, random, paginator.getRequiredLength()
+            userValueObject.id, date, uuid, paginator.getRequiredLength()
         );
 
         let resBody = paginator.buildResponseBody(myUploadList);

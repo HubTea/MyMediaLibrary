@@ -16,14 +16,14 @@ async function getAllMedia(option){
 }
 
 
-function getDateDescendingMediaList(latestDate, random, tagList, length){
+function getDateDescendingMediaList(latestDate, uuid, tagList, length){
     return getAllMedia({
         where: {
             [sequelize.Op.and]: [
                 sequelize.literal(
                     `
-                    ("Media"."createdAt", "Media"."random") <= 
-                    ('${latestDate.toISOString()}', ${random})
+                    ("Media"."createdAt", "Media"."uuid") <= 
+                    ('${latestDate.toISOString()}', '${uuid}')
                     `
                 ), {
                     [sequelize.Op.and]: createTagConditionList(tagList)
@@ -37,20 +37,20 @@ function getDateDescendingMediaList(latestDate, random, tagList, length){
         }],
         order: [
             ['createdAt', 'DESC'],
-            ['random', 'DESC']
+            ['uuid', 'DESC']
         ],
         limit: length
     });
 }
 
-function getDateAscendingMediaList(earliestDate, random, tagList, length){
+function getDateAscendingMediaList(earliestDate, uuid, tagList, length){
     return getAllMedia({
         where: {
             [sequelize.Op.and]: [
                 sequelize.literal(
                     `
-                    ("Media"."createdAt", "Media"."random") >= 
-                    ('${earliestDate.toISOString()}', ${random})
+                    ("Media"."createdAt", "Media"."uuid") >= 
+                    ('${earliestDate.toISOString()}', '${uuid}')
                     `
                 ), {
                     [sequelize.Op.and]: createTagConditionList(tagList)
@@ -64,20 +64,20 @@ function getDateAscendingMediaList(earliestDate, random, tagList, length){
         }],
         order: [
             ['createdAt', 'ASC'],
-            ['random', 'ASC']
+            ['uuid', 'ASC']
         ],
         limit: length
     });
 }
 
-function getViewCountDescendingMediaList(viewCount, random, tagList, length){
+function getViewCountDescendingMediaList(viewCount, uuid, tagList, length){
     return getAllMedia({
         where: {
             [sequelize.Op.and]: [
                 sequelize.literal(
                     `
-                    ("Media"."viewCount", "Media"."random") <= 
-                    (${viewCount}, ${random})
+                    ("Media"."viewCount", "Media"."uuid") <= 
+                    (${viewCount}, '${uuid}')
                     `
                 ), {
                     [sequelize.Op.and]: createTagConditionList(tagList)
@@ -91,7 +91,7 @@ function getViewCountDescendingMediaList(viewCount, random, tagList, length){
         }],
         order: [
             ['viewCount', 'DESC'],
-            ['random', 'DESC']
+            ['uuid', 'DESC']
         ],
         limit: length
     });
@@ -113,14 +113,14 @@ function createTagConditionList(tagList){
     return conditionList;
 }
 
-function getLatestUploadList(userId, latestDate, random, length){
+function getLatestUploadList(userId, latestDate, uuid, length){
     return getAllMedia({
         where: {
             [sequelize.Op.and]: [
                 sequelize.literal(
                     `
-                    ("Media"."createdAt", "Media"."random") <= 
-                    ('${latestDate.toISOString()}', ${random})
+                    ("Media"."createdAt", "Media"."uuid") <= 
+                    ('${latestDate.toISOString()}', '${uuid}')
                     `
                 ), {
                     uploaderId: userId
@@ -129,7 +129,7 @@ function getLatestUploadList(userId, latestDate, random, length){
         },
         order: [
             ['createdAt', 'DESC'],
-            ['random', 'DESC']
+            ['uuid', 'DESC']
         ],
         limit: length
     });
