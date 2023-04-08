@@ -53,7 +53,7 @@ router.post('/', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 

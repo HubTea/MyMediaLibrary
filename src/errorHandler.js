@@ -2,7 +2,7 @@ const error = require('./error');
 const serverConfig = require('./serverConfig');
 
 
-function handleError(req, res, err){
+function handleError(res, err, {method, originalUrl, headers, body}){
     let level = 'info';
 
     if(!(err instanceof error.ErrorResponse)){
@@ -13,10 +13,10 @@ function handleError(req, res, err){
     serverConfig.logger.log({
         level: level, 
         message: {
-            method: req.method,
-            url: req.originalUrl,
-            header: req.headers,
-            body: req.body,
+            method: method,
+            url: originalUrl,
+            header: headers,
+            body: body,
             error: err
         }
     });
@@ -31,7 +31,25 @@ function handleError(req, res, err){
     res.end();
 }
 
+function filter(obj, property) {
+    let deepCopy = JSON.parse(JSON.stringify(obj));
+
+    delete deepCopy[property];
+    return deepCopy;
+}
+
+function filterRequest(req) {
+    return {
+        method: req.method,
+        originalUrl: req.originalUrl,
+        headers: filter(filter(req.headers, 'Authorization'), 'authorization'),
+        body: filter(req.body, 'accountPassword')
+    };
+}
+
 
 module.exports = {
-    handleError
+    handleError,
+    filterRequest,
+    filter
 };

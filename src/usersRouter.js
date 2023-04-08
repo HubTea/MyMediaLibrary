@@ -38,7 +38,7 @@ router.post('/', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
@@ -80,7 +80,7 @@ router.get('/:userUuid/info', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
@@ -107,7 +107,7 @@ router.patch('/:userUuid/info', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
@@ -141,7 +141,7 @@ router.post('/:userUuid/medias', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
@@ -182,7 +182,7 @@ router.get('/:userUuid/medias', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
@@ -217,7 +217,7 @@ router.get('/:userUuid/following', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
@@ -244,7 +244,7 @@ router.post('/:userUuid/following', async function(req, res){
         res.status(200).end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
@@ -278,7 +278,7 @@ router.get('/:userUuid/bookmarks', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
@@ -308,7 +308,7 @@ router.post('/:userUuid/bookmarks', async function(req, res){
         res.status(200).end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
@@ -367,7 +367,7 @@ router.get('/:userUuid/comments', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 

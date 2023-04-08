@@ -71,7 +71,7 @@ mediaRouter.get('/', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res,err, errorHandler.filterRequest(req));
     }
 });
 
@@ -102,7 +102,7 @@ mediaRouter.get('/:mediaUuid/info', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
@@ -117,7 +117,7 @@ mediaRouter.get('/:mediaUuid', async function(req, res){
         await stream.pipeline(download, res);
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
@@ -136,7 +136,7 @@ mediaRouter.post('/:mediaUuid', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
@@ -191,7 +191,7 @@ mediaRouter.get('/:mediaUuid/comments', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
@@ -239,7 +239,7 @@ mediaRouter.post('/:mediaUuid/comments', async function(req, res){
         res.end();
     }
     catch(err){
-        errorHandler.handleError(res, err);
+        errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
 
