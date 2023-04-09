@@ -26,7 +26,7 @@ function getDateDescendingMediaList(latestDate, uuid, tagList, length){
                     ('${latestDate.toISOString()}', '${uuid}')
                     `
                 ), {
-                    [sequelize.Op.and]: createTagConditionList(tagList)
+                    [sequelize.Op.and]: tagManipulator.createTagConditionList(tagList)
                 }
             ]
         },
@@ -53,7 +53,7 @@ function getDateAscendingMediaList(earliestDate, uuid, tagList, length){
                     ('${earliestDate.toISOString()}', '${uuid}')
                     `
                 ), {
-                    [sequelize.Op.and]: createTagConditionList(tagList)
+                    [sequelize.Op.and]: tagManipulator.createTagConditionList(tagList)
                 }
             ]
         },
@@ -80,7 +80,7 @@ function getViewCountDescendingMediaList(viewCount, uuid, tagList, length){
                     (${viewCount}, '${uuid}')
                     `
                 ), {
-                    [sequelize.Op.and]: createTagConditionList(tagList)
+                    [sequelize.Op.and]: tagManipulator.createTagConditionList(tagList)
                 }
             ]
         },
@@ -95,22 +95,6 @@ function getViewCountDescendingMediaList(viewCount, uuid, tagList, length){
         ],
         limit: length
     });
-}
-
-function createTagConditionList(tagList){
-    let conditionList = [];
-
-    for(let tag of tagList){
-        let enclosedTag = tagManipulator.concatenateTagList([tag]);
-
-        conditionList.push({
-            tagString: {
-                [sequelize.Op.like]: `%${enclosedTag}%`
-            }
-        });
-    }
-
-    return conditionList;
 }
 
 function getLatestUploadList(userId, latestDate, uuid, length){
@@ -139,5 +123,6 @@ module.exports = {
     getDateDescendingMediaList,
     getDateAscendingMediaList,
     getViewCountDescendingMediaList,
-    getLatestUploadList
+    getLatestUploadList,
+    getAllMedia
 };
