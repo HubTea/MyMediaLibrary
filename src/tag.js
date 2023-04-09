@@ -1,3 +1,5 @@
+const sequelize = require('sequelize');
+
 /**
  * 
  * @param {Array} tagList 
@@ -26,7 +28,24 @@ function splitTagString(tagString){
     return tagList;
 }
 
+function createTagConditionList(tagList){
+    let conditionList = [];
+
+    for(let tag of tagList){
+        let enclosedTag = concatenateTagList([tag]);
+
+        conditionList.push({
+            tagString: {
+                [sequelize.Op.like]: `%${enclosedTag}%`
+            }
+        });
+    }
+
+    return conditionList;
+}
+
 module.exports = {
     concatenateTagList,
-    splitTagString
+    splitTagString,
+    createTagConditionList
 };

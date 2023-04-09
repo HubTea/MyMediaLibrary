@@ -14,7 +14,8 @@ class Tag extends Model{}
 class Media extends Model{}
 class Comment extends Model{}
 class MediaViewCount extends Model{}
-
+class MediaPaginationSession extends Model{}
+class MediaPaginationSessionItem extends Model{}
 
 module.exports = function GetModels(sequelize){
     User.init({
@@ -195,6 +196,41 @@ module.exports = function GetModels(sequelize){
         freezeTableName: true
     });
     
+    MediaPaginationSession.init({
+        id: {
+            type: DataTypes.INTEGER,
+            autoIncrement: true,
+            primaryKey: true
+        }
+    }, {
+        sequelize,
+        freezeTableName: true
+    });
+
+    MediaPaginationSessionItem.init({
+        sessionId: {
+            type: DataTypes.INTEGER,
+            references: {
+                model: MediaPaginationSession,
+                key: 'id'
+            },
+            primaryKey: true
+        },
+
+        mediaId: {
+            type: DataTypes.INTEGER,
+            references: {
+                model: Media,
+                key: 'id'
+            },
+            primaryKey: true
+        }
+    }, {
+        sequelize,
+        freezeTableName: true,
+        timestamps: false
+    });
+
     Bookmark.init({
         userId: {
             type: DataTypes.INTEGER,
@@ -406,6 +442,19 @@ module.exports = function GetModels(sequelize){
         foreignKey: 'mediaId'
     });
 
+    Media.hasMany(MediaPaginationSessionItem, {
+        foreignKey: 'mediaId'
+    });
+    MediaPaginationSessionItem.belongsTo(Media, {
+        foreignKey: 'mediaId'
+    });
+
+    MediaPaginationSession.hasMany(MediaPaginationSessionItem, {
+        foreignKey: 'sessionId'
+    });
+    MediaPaginationSessionItem.belongsTo(MediaPaginationSession, {
+        foreignKey: 'sessionId'
+    });
 
     User.hasMany(Comment, {
         as: 'UserComments',
@@ -424,6 +473,8 @@ module.exports = function GetModels(sequelize){
         Tag,
         Media,
         MediaViewCount,
+        MediaPaginationSession,
+        MediaPaginationSessionItem,
         Comment,
     };
 };

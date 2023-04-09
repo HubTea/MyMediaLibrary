@@ -5,11 +5,14 @@ const mediaRepository = require('./repository/mediaRepository');
 const userRepository = require('./repository/userRepository');
 const commentRepository = require('./repository/commentRepository');
 const mediaListRepository = require('./repository/mediaListRepository');
+const mediaPaginationSessionRepository = 
+    require('./repository/mediaPaginationSessionRepository');
 const checker = require('./checker');
 const errorHandler = require('./errorHandler');
 const serverConfig = require('./serverConfig');
 const pagination = require('./pagination');
 const tagManipulator = require('./tag');
+const error = require('./error');
 
 
 const mediaRouter = express.Router();
@@ -21,6 +24,7 @@ mediaRouter.get('/', async function(req, res){
         let tagList = checker.checkTagList(req.query.tag, 'tag');
         let mediaList = [];
         let paginator;
+        let resBody = {};
 
         if(sort === 'new'){
             let [date, uuid] = checker.checkDateUuidCursor(
@@ -35,6 +39,8 @@ mediaRouter.get('/', async function(req, res){
             mediaList = await mediaListRepository.getDateDescendingMediaList(
                 date, uuid, tagList, paginator.getRequiredLength()
             );
+
+            resBody = paginator.buildResponseBody(mediaList);
         }
         else if(sort === 'old'){
             let [date, uuid] = checker.checkDateUuidCursor(
@@ -49,11 +55,14 @@ mediaRouter.get('/', async function(req, res){
             mediaList = await mediaListRepository.getDateAscendingMediaList(
                 date, uuid, tagList, paginator.getRequiredLength()
             );
+
+            resBody = paginator.buildResponseBody(mediaList);
         }
         else if(sort === 'most_watched'){
             let [viewCount, uuid] = checker.checkViewCountUuidCursor(
                 req.query.cursor, '_', pagination.maximumViewCount, pagination.maximumUuid, 'cursor'
             );
+
             paginator = new pagination.Paginator({
                 length: length,
                 mapper: pagination.mediaToSimpleFormat,
@@ -63,9 +72,38 @@ mediaRouter.get('/', async function(req, res){
             mediaList = await mediaListRepository.getViewCountDescendingMediaList(
                 viewCount, uuid, tagList, paginator.getRequiredLength()
             );
-        }
+            
+            resBody = paginator.buildResponseBody(mediaList);
 
-        let resBody = paginator.buildResponseBody(mediaList);
+            let session = null;
+
+            if(req.query.session === undefined) {
+                session = new mediaPaginationSessionRepository.MediaPaginationSessionEntity();
+
+                //session.create와 아래의 session.append는 
+                //트랜잭션으로 묶지 않음.
+                await session.create();
+            }
+            else {
+                if(isNaN(req.query.session)) {
+                    throw new error.IllegalParameter(null, 'session');
+                }
+
+                session = new mediaPaginationSessionRepository.MediaPaginationSessionEntity(
+                    parseInt(req.query.session)
+                );
+            }
+            
+            let omittedList = await session.getOmittedMedia(viewCount, uuid, tagList, 50);
+            
+            await session.append([
+                ...omittedList.map(x => x.id),
+                ...paginator.croppedList.map(x => x.id)
+            ]);
+
+            resBody.omittedList = omittedList.map(x => pagination.mediaToSimpleFormat(x));
+            resBody.session = session.sessionId;    
+        }
 
         res.json(resBody);
         res.end();
