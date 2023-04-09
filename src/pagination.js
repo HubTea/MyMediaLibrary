@@ -38,6 +38,7 @@ class Paginator{
         this.resBody = {
             list: []
         };
+        this.croppedList = [];
     }
 
     /**
@@ -66,7 +67,9 @@ class Paginator{
 
         let bound = Math.min(list.length, this.length);
         
+        this.croppedList = [];
         for(let i = 0; i < bound; i++){
+            this.croppedList.push(list[i]);
             this.resBody.list.push(this.mapper(list[i]));
         }
 
