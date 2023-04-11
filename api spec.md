@@ -453,7 +453,18 @@ GET /v1/medias/{mediaUuid}/info
 ```jsx
 //인증x
 GET /v1/medias
+
+{
+	sort: 'new' | 'old' | 'most_watched',
+	length: number | undefined,
+	cursor: string | undefined,	   
+	session: number | undefined  
+}
+
+session이 undefined이면 새로운 세션 발급
 ```
+ 
+
 
 응답
 
@@ -475,7 +486,20 @@ GET /v1/medias
 			uuid: string,
 			nickname: string
 		}
-	}>
+	}>,
+	omittedList: Array<{
+		uuid: string,
+		title: string,
+		type: string,
+		updateTime: string,
+		viewCount: number,
+		dislikeCount: number,
+		uploader: {
+			uuid: string,
+			nickname: string
+		}
+	}>,
+	session: number
 }
 ```
 
