@@ -314,6 +314,9 @@ router.post('/:userUuid/bookmarks', async function(req, res){
 
 
 router.get('/:userUuid/comments', async function(req, res){
+    res.end();
+    return;
+
     try{
         let userUuid = checker.checkUuid(req.params.userUuid, 'user uuid');
         let length = checker.checkPaginationLength(req.query.length, 'length');

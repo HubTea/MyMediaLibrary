@@ -81,10 +81,10 @@ async function testNotNestedComment(testCase){
         commentUuidList.push(location);
     }
     
-    let myCommentPageGenerator = new MyCommentPageGenerator(user);
+    //let myCommentPageGenerator = new MyCommentPageGenerator(user);
     let mediaCommentPageGenerator = new MediaCommentPageGenerator(user, mediaUuid);
 
-    await testUtil.assertEqualOrderPage(commentUuidList, myCommentPageGenerator);
+    //await testUtil.assertEqualOrderPage(commentUuidList, myCommentPageGenerator);
     await testUtil.assertEqualOrderPage(commentUuidList, mediaCommentPageGenerator);
 }
 
@@ -134,7 +134,7 @@ async function testNestedComment(testCase){
     await testUtil.assertEqualOrderPage(childCommentUuidList, generator);
 }
 
-describe('/v1/medias/{mediaUuid}/comments, /v1/users/{userUuid}/comments 테스트', function(){
+describe('/v1/medias/{mediaUuid}/comments', function(){
     beforeEach(async function(){
         await dbInitializer.initialize({
             logging: false
