@@ -4,30 +4,37 @@ const error = require('../error');
 const serverConfig = require('../serverConfig');
 
 
-async function getCommentList(option){
+function getCommentShardModel(mediaId) {
+    let shardIndex =  mediaId % serverConfig.commentShardList.length;
+    return serverConfig.commentShardModelList[shardIndex];
+}
+
+async function getCommentList(option, mediaId){
     try{
-        return await serverConfig.model.Comment.findAll(option);
+        let model = getCommentShardModel(mediaId);
+        return await model.Comment.findAll(option);
     }
     catch(err){
         throw error.wrapSequelizeError(err);
     }
 }
 
-async function getComment(option){
+async function getComment(option, mediaId){
     try{
-        return await serverConfig.model.Comment.findOne(option);
+        let model = getCommentShardModel(mediaId);
+        return await model.Comment.findOne(option);
     }
     catch(err){
         throw error.wrapSequelizeError(err);
     }
 }
 
-async function getCommentByUuid(uuid){
+async function getCommentByUuid(uuid, mediaId){
     let comment = await getComment({
         where: {
             uuid: uuid
         }
-    });
+    }, mediaId);
 
     return comment.toJSON();
 }
@@ -85,13 +92,14 @@ async function getMyCommentListWithMediaReference(date, random, length, writerId
  * @param {number} random 
  * @param {number} length 
  * @param {number} parentId 
+ * @param {number} mediaId
  */
-async function getChildCommentList(date, random, length, parentId){
+async function getChildCommentList(date, random, length, parentId, mediaId){
     let option = generateDefaultOption(date, random, length);
 
     option.where.parentId = parentId;
     
-    let list = await getCommentList(option);
+    let list = await getCommentList(option, mediaId);
 
     return list.map(x => x.toJSON());
 }
@@ -112,14 +120,14 @@ async function getCommentListOfMedia(date, random, length, mediaId){
         [sequelize.Op.is]: null
     };
 
-    let list = await getCommentList(option);
+    let list = await getCommentList(option, mediaId);
 
     return list.map(x => x.toJSON());
 }
 
 function generateDefaultOption(date, random, length){
     return {
-        attributes: ['uuid', 'content', 'createdAt', 'updatedAt', 'random'],
+        attributes: ['uuid', 'content', 'createdAt', 'updatedAt', 'random', 'writerNickname'],
         where: {
             [sequelize.Op.or]: [{
                 createdAt: {
@@ -132,11 +140,6 @@ function generateDefaultOption(date, random, length){
                 }
             }]
         },
-        include: [{
-            model: serverConfig.model.User,
-            as: 'CommentWriter',
-            attributes: ['uuid', 'nickname']
-        }],
         order: [
             ['createdAt', 'ASC'],
             ['random', 'ASC']
@@ -145,10 +148,41 @@ function generateDefaultOption(date, random, length){
     };
 }
 
+async function confirm(commentId, nickname, mediaId) {
+    let model = getCommentShardModel(mediaId);
+
+    try {
+        if(nickname === null) {
+            await model.Comment.update({
+                confirmed: true
+            }, {
+                where: {
+                    id: commentId
+                }
+            });
+        }
+        else {
+            await model.Comment.update({
+                writerNickname: nickname,
+                confirmed: true
+            }, {
+                where: {
+                    id: commentId
+                }
+            });
+        }
+    }
+    catch(err) {
+        throw error.wrapSequelizeError(err);
+    }
+}
+
 module.exports = {
     getCommentByUuid,
     getChildCommentListWithMediaReference,
     getMyCommentListWithMediaReference,
     getChildCommentList,
     getCommentListOfMedia,
+    getCommentShardModel,
+    confirm
 };

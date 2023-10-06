@@ -185,16 +185,17 @@ mediaRouter.get('/:mediaUuid/comments', async function(req, res){
         let [date, random] = checker.checkDateRandomCursor(req.query.cursor, '_', pagination.beginningDate, 'cursor');
         let parentUuid = req.query.parentUuid;
 
-        let commentList;
-
+        let mediaEntity = mediaRepository.MediaEntity.fromUuid(mediaUuid);
+        let mediaValueObject = await mediaEntity.getMetadata();
+        
         let paginator = new pagination.Paginator({
             length: length,
             mapper: function(comment){
                 return {
                     uuid: comment.uuid,
                     writer: {
-                        uuid: comment.CommentWriter.uuid,
-                        nickname: comment.CommentWriter.nickname
+                        uuid: comment.writerUuid,
+                        nickname: comment.writerNickname
                     },
                     content: comment.content,
                     createdAt: comment.createdAt.toISOString(),
@@ -204,20 +205,18 @@ mediaRouter.get('/:mediaUuid/comments', async function(req, res){
             cursorFactory: pagination.createDateRandomCursor
         });
         let requiredLength = paginator.getRequiredLength();
+        let commentList;
 
         if(parentUuid){
             checker.checkUuid(parentUuid, 'parent uuid');
 
-            let parentComment = await commentRepository.getCommentByUuid(parentUuid);
-
+            let parentComment = await commentRepository.getCommentByUuid(parentUuid, mediaValueObject.id);
+            
             commentList = await commentRepository.getChildCommentList(
-                date, random, requiredLength, parentComment.id
+                date, random, requiredLength, parentComment.id, mediaValueObject.id
             );
         }
         else{
-            let mediaEntity = mediaRepository.MediaEntity.fromUuid(mediaUuid);
-            let mediaValueObject = await mediaEntity.getMetadata();
-
             commentList = await commentRepository.getCommentListOfMedia(
                 date, random, requiredLength, mediaValueObject.id
             );
@@ -250,9 +249,11 @@ mediaRouter.post('/:mediaUuid/comments', async function(req, res){
         let userEntity = new userRepository.UserEntity();
         let userValueObject = await userEntity.getUserByUuid(writerUuid);
         let mediaValueObject = await mediaValueObjectPromise;
-        
+        let model = commentRepository.getCommentShardModel(mediaValueObject.id);
         let commentSeed = {
             writerId: userValueObject.id,
+            writerNickname: userValueObject.nickname,
+            writerUuid,
             mediaId: mediaValueObject.id,
             content: content,
             random: Math.floor(pagination.maximumRandom * Math.random())
@@ -261,7 +262,7 @@ mediaRouter.post('/:mediaUuid/comments', async function(req, res){
         if(parentUuid){
             checker.checkUuid(parentUuid);
 
-            let parentComment = await serverConfig.model.Comment.findOne({
+            let parentComment = await model.Comment.findOne({
                 where: {
                     uuid: parentUuid
                 }
@@ -270,8 +271,19 @@ mediaRouter.post('/:mediaUuid/comments', async function(req, res){
             commentSeed.parentId = parentComment.id;
         }
 
-        let comment = await serverConfig.model.Comment.create(commentSeed);
+        let comment = await model.Comment.create(commentSeed);
 
+        let oldNickname = userValueObject.nickname;
+        userValueObject = await userEntity.getUserByUuid(writerUuid);
+
+        let newNickname = userValueObject.nickname;
+        if(oldNickname === newNickname) {
+            await commentRepository.confirm(comment.id, null, mediaValueObject.id);
+        }
+        else {
+            await commentRepository.confirm(comment.id, newNickname, mediaValueObject.id);
+        }
+        
         res.set('Location', comment.uuid);
         res.status(201);
         res.end();

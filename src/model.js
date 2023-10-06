@@ -12,10 +12,11 @@ class Bookmark extends Model{}
 class Subscribe extends Model{}
 class Tag extends Model{}
 class Media extends Model{}
-class Comment extends Model{}
 class MediaViewCount extends Model{}
 class MediaPaginationSession extends Model{}
 class MediaPaginationSessionItem extends Model{}
+class NicknameLogQueue extends Model{}
+class NicknameLog extends Model{}
 
 module.exports = function GetModels(sequelize){
     User.init({
@@ -310,52 +311,24 @@ module.exports = function GetModels(sequelize){
     //     freezeTableName: true
     // });
 
-    Comment.init({
-        id: {
+    NicknameLog.init({
+        queueId: {
             type: DataTypes.INTEGER,
-            autoIncrement: true,
             primaryKey: true
         },
 
-        uuid: {
-            type: DataTypes.UUID,
-            defaultValue: DataTypes.UUIDV4,
-            allowNull: false,
-            unique: true
-        },
-
-        writerId: {
+        id: {
             type: DataTypes.INTEGER,
-            references: {
-                model: User,
-                key: 'id'
-            }
+            primaryKey: true
         },
 
-        mediaId: {
+        userId: {
             type: DataTypes.INTEGER,
-            references: {
-                model: Media,
-                key: 'id'
-            }
-        },
-
-        parentId: {
-            type: DataTypes.INTEGER,
-            references: {
-                model: Comment,
-                key: 'id'
-            }
-        },
-
-        content: {
-            type: DataTypes.STRING,
-            defaultValue: '',
             allowNull: false
         },
 
-        random: {
-            type: DataTypes.INTEGER,
+        newNickname: {
+            type: DataTypes.STRING,
             allowNull: false
         }
     }, {
@@ -364,6 +337,22 @@ module.exports = function GetModels(sequelize){
         freezeTableName: true
     });
 
+    NicknameLogQueue.init({
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true
+        },
+
+        offset: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0,
+            allowNull: false
+        }
+    }, {
+        sequelize,
+        omitNull: true,
+        freezeTableName: true
+    })
 
     User.hasMany(Media, {
         as: 'MyMedias',
@@ -407,14 +396,6 @@ module.exports = function GetModels(sequelize){
     });
 
 
-    Comment.hasMany(Comment, {
-        as: 'ChildComments', 
-        foreignKey: 'parentId'
-    });
-    Comment.belongsTo(Comment, {
-        as: 'ParentComment',
-        foreignKey: 'parentId'
-    });
 
     // Tag.belongsTo(Media, {
     //     as: 'TaggedMedia',
@@ -426,14 +407,6 @@ module.exports = function GetModels(sequelize){
     // });
 
 
-    Media.hasMany(Comment, {
-        as: 'MediaComments',
-        foreignKey: 'mediaId'
-    });
-    Comment.belongsTo(Media, {
-        as: 'CommentTarget',
-        foreignKey: 'mediaId'
-    });
 
     Media.hasOne(MediaViewCount, {
         foreignKey: 'mediaId'
@@ -456,14 +429,6 @@ module.exports = function GetModels(sequelize){
         foreignKey: 'sessionId'
     });
 
-    User.hasMany(Comment, {
-        as: 'UserComments',
-        foreignKey: 'writerId'
-    });
-    Comment.belongsTo(User, {
-        as: 'CommentWriter',
-        foreignKey: 'writerId'
-    });
 
 
     return {
@@ -475,6 +440,7 @@ module.exports = function GetModels(sequelize){
         MediaViewCount,
         MediaPaginationSession,
         MediaPaginationSessionItem,
-        Comment,
+        NicknameLog,
+        NicknameLogQueue
     };
 };

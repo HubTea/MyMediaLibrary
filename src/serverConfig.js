@@ -1,8 +1,31 @@
 const process = require('process');
 const orm = require('sequelize');
 const winston = require('winston');
+const fs = require('fs');
 
 const getModels = require('./model');
+const commentShardModel = require('./commentShardModel');
+
+
+let config = JSON.parse(fs.readFileSync(process.env.CONFIG_FILE_PATH).toString());
+
+let commentShardList = [];
+let commentShardModelList = [];
+for(let shard of config.commentShardInfoList) {
+    let shardOption = {
+        host: shard.host,
+        port: shard.port,
+        dialect: 'postgres'
+    }
+
+    if(process.env.NODE_ENV === 'production') {
+        shardOption.logging = null;
+    }
+
+    let db = new orm.Sequelize(shard.database, shard.user, shard.password, shardOption)
+    commentShardList.push(db);
+    commentShardModelList.push(commentShardModel.init(db));
+}
 
 
 let sqlServer = {
@@ -69,6 +92,9 @@ module.exports = {
     sqlServer,
     sequelize,
     model: getModels(sequelize),
-
+    commentShardList,
+    commentShardModelList,
+    commentShardInfoList: config.commentShardInfoList,
+    nicknameLogConcurrency: config.nicknameLogConcurrency,
     logger
 };
