@@ -89,6 +89,13 @@ class NotFoundError extends ErrorResponse{
 }
 
 
+class EarlyNicknameUpdate extends ErrorResponse {
+    constructor(underlyingError) {
+        super(400, 'EARLY_NICKNAME_UPDATE', underlyingError);
+    }
+}
+
+
 class DatabaseError extends ErrorResponse{
     constructor(underlyingError){
         super(500, 'QUERY_FAILED_ERROR', underlyingError);
@@ -149,6 +156,7 @@ module.exports = {
     NotFoundError,
     FileStorageError,
     NotPreparedError,
+    EarlyNicknameUpdate,
 
     wrapSequelizeError
 };

@@ -55,6 +55,12 @@ module.exports = function GetModels(sequelize){
             allowNull: false
         },
 
+        previousNicknameUpdate: {
+            type: DataTypes.DATE,
+            defaultValue: '2000-01-01T00:00:00',
+            allowNull: false
+        },
+
         introduction: {
             type: DataTypes.STRING,
             defaultValue: '',

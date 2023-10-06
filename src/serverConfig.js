@@ -96,5 +96,6 @@ module.exports = {
     commentShardModelList,
     commentShardInfoList: config.commentShardInfoList,
     nicknameLogConcurrency: config.nicknameLogConcurrency,
+    nicknameUpdateInterval: config.nicknameUpdateInterval,
     logger
 };

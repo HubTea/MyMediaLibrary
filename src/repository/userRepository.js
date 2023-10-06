@@ -65,21 +65,62 @@ class UserEntity{
             throw wrapUserCreateError(userCreateError);
         }
     }   
+    
+    async beginNicknameUpdate(userValueObject, transaction) {
+        let queueId = userValueObject.id % serverConfig.nicknameLogConcurrency;
+        let queue = await serverConfig.model.NicknameLogQueue.findOne({
+            where: {
+                id: queueId
+            },
+            transaction,
+            lock: sequelize.Transaction.LOCK.UPDATE
+        });
+
+        let user = await getOneUser({
+            where: {
+                id: userValueObject.id
+            },
+            transaction
+        });
+
+        let elapsedTime = Date.now() - user.previousNicknameUpdate.getTime();
+        if(elapsedTime < serverConfig.nicknameUpdateInterval) {
+            throw new error.EarlyNicknameUpdate(null);
+        }
+
+        await serverConfig.model.NicknameLogQueue.update({
+            offset: queue.offset + 1
+        }, {
+            where: {
+                id: queueId
+            },
+            transaction
+        });
+
+        await serverConfig.model.User.update({
+            nickname: userValueObject.nickname,
+            introduction: userValueObject.introduction,
+            previousNicknameUpdate: new Date()
+        }, {
+            where: {
+                id: userValueObject.id
+            },
+            transaction
+        })
+
+        await serverConfig.model.NicknameLog.create({
+            queueId: queueId,
+            id: queue.offset,
+            userId: userValueObject.id,
+            newNickname: userValueObject.nickname
+        }, {
+            transaction
+        });
+    }
 
     async updateUser(userValueObject){
         try{
-            let user = converter.userValueObjectToUser(userValueObject);
-            
-            if(this.user){
-                let updateResult = await this.user.update(user);
-            }
-            else{
-                let updateResult = await serverConfig.model.User.update(user, {
-                    where: {
-                        id: userValueObject.id
-                    }
-                });
-            }
+            await serverConfig.sequelize.transaction(this.beginNicknameUpdate.bind(this, userValueObject));
         }
         catch(userUpdateError){
             throw error.wrapSequelizeError(userUpdateError);
