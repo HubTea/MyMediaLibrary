@@ -158,15 +158,6 @@ module.exports = function GetModels(sequelize){
         },
 
         indexes: [{
-            name: 'idx_created_at_uuid_desc',
-            fields: [{
-                name: 'createdAt',
-                order: 'DESC'
-            }, {
-                name: 'uuid',
-                order: 'DESC'
-            }]
-        }, {
             name: 'idx_created_at_uuid_asc',
             fields: [{
                 name: 'createdAt',
