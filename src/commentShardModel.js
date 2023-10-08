@@ -91,6 +91,13 @@ function init(sequelize) {
         freezeTableName: true,
 
         indexes: [{
+            name: 'idx_created_at_random_asc',
+            fields: [{
+                name: 'createdAt'
+            }, {
+                name: 'random'
+            }]
+        }, {
             name: 'idx_writer_id',
             fields: [{
                 name: 'writerId'
