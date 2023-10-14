@@ -9,16 +9,22 @@ const commentShardModel = require('../src/commentShardModel');
 
 
 async function initialize({logging}){
-    await sync(true, logging);
+    let start = Date.now();
+    await sync(undefined, (a, b) => console.log(b, a));
+    console.log(`---${Date.now() - start}---`);
 }
 
 async function sync(force, logging) {
     const sequelize = new Sequelize(serverConfig.sqlServer.url, {
-        logging: logging
+        logging: logging,
+        benchmark: true
     });
     let model = getModels(sequelize);
 
-    await sequelize.sync({force: force});
+    await sequelize.truncate({
+        cascade: true,
+        force: true
+    })
     await syncNicknameLogQueue(model);
     await sequelize.close();
 
@@ -27,11 +33,15 @@ async function sync(force, logging) {
             host: info.host,
             port: info.port,
             dialect: 'postgres',
-            logging
+            logging,
+            benchmark: true
         });
         let model = commentShardModel.init(shard);
 
-        await shard.sync({force});
+        await shard.truncate({
+            cascade: true,
+            force: true
+        })
         await syncNicknameLogQueue(model);
         await shard.close();
     }
