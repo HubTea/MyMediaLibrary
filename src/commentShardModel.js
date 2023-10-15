@@ -4,11 +4,10 @@ const {
 } = require('sequelize');
 
 
-class NicknameLogQueue extends Model{}
-class Comment extends Model{}
-
-
 function init(sequelize) {
+    class NicknameLogQueue extends Model{}
+    class Comment extends Model{}
+    
     NicknameLogQueue.init({
         id: {
             type: DataTypes.INTEGER,
