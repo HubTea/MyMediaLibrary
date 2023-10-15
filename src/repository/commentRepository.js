@@ -97,6 +97,7 @@ async function getMyCommentListWithMediaReference(date, random, length, writerId
 async function getChildCommentList(date, random, length, parentId, mediaId){
     let option = generateDefaultOption(date, random, length);
 
+    option.where.mediaId = mediaId;
     option.where.parentId = parentId;
     
     let list = await getCommentList(option, mediaId);
@@ -128,19 +129,12 @@ async function getCommentListOfMedia(date, random, length, mediaId){
 function generateDefaultOption(date, random, length){
     return {
         attributes: ['uuid', 'content', 'createdAt', 'updatedAt', 'random', 'writerNickname', 'writerUuid'],
-        where: {
-            [sequelize.Op.or]: [{
-                createdAt: {
-                    [sequelize.Op.gt]: date
-                }
-            }, {
-                createdAt: date,
-                random: {
-                    [sequelize.Op.gte]: random
-                }
-            }]
-        },
+        where: sequelize.literal(
+            `("Comment"."createdAt", "Comment"."random") >= ('${date.toISOString()}', ${random})`
+        ),
         order: [
+            ['mediaId', 'ASC'],
+            ['parentId', 'ASC'],
             ['createdAt', 'ASC'],
             ['random', 'ASC']
         ],

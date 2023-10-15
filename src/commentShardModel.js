@@ -7,7 +7,7 @@ const {
 function init(sequelize) {
     class NicknameLogQueue extends Model{}
     class Comment extends Model{}
-    
+
     NicknameLogQueue.init({
         id: {
             type: DataTypes.INTEGER,
@@ -90,8 +90,12 @@ function init(sequelize) {
         freezeTableName: true,
 
         indexes: [{
-            name: 'idx_created_at_random_asc',
+            name: 'idx_media_id_parent_id_created_at_random_asc',
             fields: [{
+                name: 'mediaId'
+            }, {
+                name: 'parentId'
+            },{
                 name: 'createdAt'
             }, {
                 name: 'random'
@@ -100,11 +104,6 @@ function init(sequelize) {
             name: 'idx_writer_id',
             fields: [{
                 name: 'writerId'
-            }]
-        }, {
-            name: 'idx_media_id', 
-            fields: [{
-                name: 'mediaId'
             }]
         }]
     });
