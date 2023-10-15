@@ -129,9 +129,11 @@ async function getCommentListOfMedia(date, random, length, mediaId){
 function generateDefaultOption(date, random, length){
     return {
         attributes: ['uuid', 'content', 'createdAt', 'updatedAt', 'random', 'writerNickname', 'writerUuid'],
-        where: sequelize.literal(
-            `("Comment"."createdAt", "Comment"."random") >= ('${date.toISOString()}', ${random})`
-        ),
+        where: {
+            [sequelize.Op.and]: sequelize.literal(
+                `("Comment"."createdAt", "Comment"."random") >= ('${date.toISOString()}', ${random})`
+            )
+        },
         order: [
             ['mediaId', 'ASC'],
             ['parentId', 'ASC'],
