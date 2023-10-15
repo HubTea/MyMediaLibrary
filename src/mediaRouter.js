@@ -243,46 +243,7 @@ mediaRouter.post('/:mediaUuid/comments', async function(req, res){
 
         checker.checkUserAuthorization(authorizer, writerUuid);
 
-        let mediaEntity = mediaRepository.MediaEntity.fromUuid(mediaUuid);
-        let mediaValueObjectPromise = mediaEntity.getMetadata();
-
-        let userEntity = new userRepository.UserEntity();
-        let userValueObject = await userEntity.getUserByUuid(writerUuid);
-        let mediaValueObject = await mediaValueObjectPromise;
-        let model = commentRepository.getCommentShardModel(mediaValueObject.id);
-        let commentSeed = {
-            writerId: userValueObject.id,
-            writerNickname: userValueObject.nickname,
-            writerUuid,
-            mediaId: mediaValueObject.id,
-            content: content,
-            random: Math.floor(pagination.maximumRandom * Math.random())
-        };
-
-        if(parentUuid){
-            checker.checkUuid(parentUuid);
-
-            let parentComment = await model.Comment.findOne({
-                where: {
-                    uuid: parentUuid
-                }
-            });
-
-            commentSeed.parentId = parentComment.id;
-        }
-
-        let comment = await model.Comment.create(commentSeed);
-
-        let oldNickname = userValueObject.nickname;
-        userValueObject = await userEntity.getUserByUuid(writerUuid);
-
-        let newNickname = userValueObject.nickname;
-        if(oldNickname === newNickname) {
-            await commentRepository.confirm(comment.id, null, mediaValueObject.id);
-        }
-        else {
-            await commentRepository.confirm(comment.id, newNickname, mediaValueObject.id);
-        }
+        let comment = await createComment(mediaUuid, writerUuid, parentUuid, content);
         
         res.set('Location', comment.uuid);
         res.status(201);
@@ -293,6 +254,52 @@ mediaRouter.post('/:mediaUuid/comments', async function(req, res){
     }
 });
 
+async function createComment(mediaUuid, writerUuid, parentUuid, content) {
+    let mediaEntity = mediaRepository.MediaEntity.fromUuid(mediaUuid);
+    let mediaValueObjectPromise = mediaEntity.getMetadata();
+
+    let userEntity = new userRepository.UserEntity();
+    let userValueObject = await userEntity.getUserByUuid(writerUuid);
+    let mediaValueObject = await mediaValueObjectPromise;
+    let model = commentRepository.getCommentShardModel(mediaValueObject.id);
+    let commentSeed = {
+        writerId: userValueObject.id,
+        writerNickname: userValueObject.nickname,
+        writerUuid,
+        mediaId: mediaValueObject.id,
+        content: content,
+        random: Math.floor(pagination.maximumRandom * Math.random())
+    };
+
+    if(parentUuid){
+        checker.checkUuid(parentUuid);
+
+        let parentComment = await model.Comment.findOne({
+            where: {
+                uuid: parentUuid
+            }
+        });
+
+        commentSeed.parentId = parentComment.id;
+    }
+
+    let comment = await model.Comment.create(commentSeed);
+
+    let oldNickname = userValueObject.nickname;
+    userValueObject = await userEntity.getUserByUuid(writerUuid);
+
+    let newNickname = userValueObject.nickname;
+    if(oldNickname === newNickname) {
+        await commentRepository.confirm(comment.id, null, mediaValueObject.id);
+    }
+    else {
+        await commentRepository.confirm(comment.id, newNickname, mediaValueObject.id);
+    }
+
+    return comment;
+}
+
 module.exports = {
-    router: mediaRouter
+    router: mediaRouter,
+    createComment
 };

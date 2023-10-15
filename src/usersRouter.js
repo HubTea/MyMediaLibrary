@@ -24,14 +24,7 @@ router.post('/', async function(req, res){
         let accountPassword = checker.checkAccountPassword(req.body.accountPassword, 'accountPassword');
         let nickname = checker.checkPlaintext(req.body.nickname, 'nickname');
         
-        let userSeed = await createUserSeed({
-            accountId: accountId,
-            accountPw: accountPassword,
-            nickname: nickname
-        });
-        let userEntity = new userRepository.UserEntity();
-
-        let userValueObject = await userEntity.createUser(userSeed);
+        let userValueObject = await createUser(accountId, accountPassword, nickname);
 
         res.status(201);
         res.setHeader('Location', `${userValueObject.uuid}`);
@@ -41,6 +34,17 @@ router.post('/', async function(req, res){
         errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
+
+async function createUser(accountId, accountPassword, nickname) {
+    let userSeed = await createUserSeed({
+        accountId: accountId,
+        accountPw: accountPassword,
+        nickname: nickname
+    });
+    let userEntity = new userRepository.UserEntity();
+
+    return await userEntity.createUser(userSeed);
+}
 
 async function createUserSeed({accountId, accountPw, nickname}){
     let digestGenerator = new digest.Pbkdf2DigestGenerator(
@@ -124,17 +128,7 @@ router.post('/:userUuid/medias', async function(req, res){
 
         checker.checkUserAuthorization(authorizer, userUuid);
 
-        let userEntity = new userRepository.UserEntity();
-        let userValueObject = await userEntity.getUserByUuid(userUuid);
-
-        let mediaEntity = new mediaRepository.MediaEntity();
-        let mediaValueObject = await mediaEntity.createMetadata({
-            title: title,
-            description: description,
-            type: type,
-            uploaderId: userValueObject.id,
-            tagString: tagManipulator.concatenateTagList(tagList)
-        });
+        let mediaValueObject = await createMedia(userUuid, title, description, type, tagList);
 
         res.status(201);
         res.setHeader('Location', `${mediaValueObject.uuid}`);
@@ -144,6 +138,20 @@ router.post('/:userUuid/medias', async function(req, res){
         errorHandler.handleError(res, err, errorHandler.filterRequest(req));
     }
 });
+
+async function createMedia(userUuid, title, description, type, tagList) {
+    let userEntity = new userRepository.UserEntity();
+    let userValueObject = await userEntity.getUserByUuid(userUuid);
+
+    let mediaEntity = new mediaRepository.MediaEntity();
+    return await mediaEntity.createMetadata({
+        title: title,
+        description: description,
+        type: type,
+        uploaderId: userValueObject.id,
+        tagString: tagManipulator.concatenateTagList(tagList)
+    });
+}
 
 
 router.get('/:userUuid/medias', async function(req, res){
@@ -376,5 +384,7 @@ router.get('/:userUuid/comments', async function(req, res){
 
 
 module.exports = {
-    router
+    router,
+    createUser,
+    createMedia
 };
